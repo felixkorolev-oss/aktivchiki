@@ -5,33 +5,139 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Инициализация клиента Supabase
 let supabaseClient = null;
+let isSupabaseReady = false;
+let connectionAttempts = 0;
+const MAX_ATTEMPTS = 3;
 
+// Инициализация Supabase с таймаутом
 async function initSupabase() {
-    if (!supabaseClient && window.supabase) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('✅ Supabase подключен');
+    return new Promise(async (resolve) => {
+        if (isSupabaseReady) {
+            updateCloudStatus('✅ Подключено к облаку');
+            resolve(true);
+            return;
+        }
         
-        // Загружаем данные из облака при старте
-        await loadDataFromCloud();
+        if (!window.supabase) {
+            updateCloudStatus('⏳ Загрузка библиотеки Supabase...');
+            // Ждём загрузки библиотеки
+            await waitForSupabaseLibrary();
+        }
         
-        // Подписываемся на изменения в реальном времени
-        subscribeToChanges();
+        if (!SUPBASE_URL.includes('ВАШ_ПРОЕКТ')) {
+            updateCloudStatus('⚠️ Настройте Supabase: замените URL и KEY в файле supabase.js');
+            resolve(false);
+            return;
+        }
+        
+        updateCloudStatus('🔄 Подключение к облаку...');
+        
+        try {
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), 5000)
+            );
+            
+            const connectPromise = (async () => {
+                supabaseClient = window.supabase.createClient(SUPBASE_URL, SUPABASE_ANON_KEY);
+                // Проверяем подключение
+                const { data, error } = await supabaseClient.from('users').select('count', { count: 'exact', head: true });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                isSupabaseReady = true;
+                updateCloudStatus('✅ Облако подключено! Данные синхронизируются.');
+                console.log('✅ Supabase подключен');
+                
+                // Загружаем данные
+                await loadDataFromCloud();
+                
+                return true;
+            })();
+            
+            const result = await Promise.race([connectPromise, timeoutPromise]);
+            resolve(result);
+            
+        } catch (error) {
+            connectionAttempts++;
+            console.error('Ошибка подключения к Supabase:', error);
+            
+            if (connectionAttempts < MAX_ATTEMPTS) {
+                updateCloudStatus(`⚠️ Попытка ${connectionAttempts}/${MAX_ATTEMPTS}... Повтор через 3 секунды`);
+                setTimeout(() => {
+                    initSupabase().then(resolve);
+                }, 3000);
+            } else {
+                updateCloudStatus('❌ Офлайн режим. Данные сохраняются локально.');
+                resolve(false);
+            }
+        }
+    });
+}
+
+// Ожидание загрузки библиотеки Supabase
+function waitForSupabaseLibrary() {
+    return new Promise((resolve) => {
+        let attempts = 0;
+        const checkInterval = setInterval(() => {
+            if (window.supabase) {
+                clearInterval(checkInterval);
+                resolve();
+            }
+            attempts++;
+            if (attempts > 50) { // 5 секунд максимум
+                clearInterval(checkInterval);
+                resolve();
+            }
+        }, 100);
+    });
+}
+
+// Обновление статуса в интерфейсе
+function updateCloudStatus(message, isError = false) {
+    const statusText = document.getElementById('cloudStatusText');
+    if (statusText) {
+        statusText.innerHTML = message;
+        statusText.style.color = isError ? 'var(--danger)' : 'var(--secondary)';
     }
+    console.log('☁️', message);
 }
 
 // Загрузка данных из облака
 async function loadDataFromCloud() {
-    if (!supabaseClient) return;
+    if (!supabaseClient || !isSupabaseReady) {
+        console.log('Облако не готово, используем локальные данные');
+        return false;
+    }
     
     try {
+        updateCloudStatus('📥 Загрузка пользователей...');
+        
         // Загружаем пользователей
         const { data: users, error: usersError } = await supabaseClient
             .from('users')
             .select('*');
         
-        if (!usersError && users && users.length > 0) {
+        if (usersError) throw usersError;
+        
+        if (users && users.length > 0) {
             console.log(`📥 Загружено ${users.length} пользователей из облака`);
             localStorage.setItem('aktivchiki_users', JSON.stringify(users));
+            
+            // Обновляем authManager
+            if (window.authManager) {
+                window.authManager.users = users;
+                window.authManager.saveUsersToFile(users);
+                window.authManager.updateUI();
+                
+                if (typeof renderLeaderboard === 'function') renderLeaderboard();
+                if (typeof renderProfile === 'function') renderProfile();
+            }
+        } else {
+            // Если в облаке нет данных, загружаем локальные
+            console.log('В облаке нет данных, используем локальные');
+            await uploadLocalDataToCloud();
         }
         
         // Загружаем мероприятия
@@ -42,144 +148,162 @@ async function loadDataFromCloud() {
         if (!eventsError && events && events.length > 0) {
             console.log(`📥 Загружено ${events.length} мероприятий из облака`);
             localStorage.setItem('aktivchiki_events', JSON.stringify(events));
+            if (typeof renderEvents === 'function') renderEvents();
         }
         
-        // Обновляем интерфейс
-        if (window.authManager) {
-            window.authManager.users = JSON.parse(localStorage.getItem('aktivchiki_users') || '[]');
-            if (typeof renderLeaderboard === 'function') renderLeaderboard();
-            if (typeof renderProfile === 'function') renderProfile();
-        }
+        updateCloudStatus(`✅ Загружено ${users?.length || 0} пользователей, ${events?.length || 0} мероприятий`);
+        return true;
         
     } catch (error) {
         console.error('Ошибка загрузки из облака:', error);
+        updateCloudStatus('⚠️ Ошибка загрузки, работа в офлайн режиме', true);
+        return false;
     }
 }
 
-// Сохранение данных в облако
-async function saveUserToCloud(user) {
-    if (!supabaseClient) return;
+// Загрузка локальных данных в облако
+async function uploadLocalDataToCloud() {
+    if (!supabaseClient || !isSupabaseReady) return false;
+    
+    const users = JSON.parse(localStorage.getItem('aktivchiki_users') || '[]');
+    const events = JSON.parse(localStorage.getItem('aktivchiki_events') || '[]');
+    
+    if (users.length === 0 && events.length === 0) return false;
+    
+    updateCloudStatus(`📤 Загрузка ${users.length} пользователей в облако...`);
     
     try {
-        // Проверяем, существует ли пользователь
-        const { data: existing } = await supabaseClient
-            .from('users')
-            .select('id')
-            .eq('id', user.id)
-            .single();
-        
-        if (existing) {
-            // Обновляем существующего
-            await supabaseClient
+        for (const user of users) {
+            const { error } = await supabaseClient
                 .from('users')
-                .update(user)
-                .eq('id', user.id);
-        } else {
-            // Создаём нового
-            await supabaseClient
-                .from('users')
-                .insert([user]);
+                .upsert(user, { onConflict: 'id' });
+            if (error) console.error('Ошибка загрузки пользователя:', error);
         }
         
+        for (const event of events) {
+            const { error } = await supabaseClient
+                .from('events')
+                .upsert(event, { onConflict: 'id' });
+            if (error) console.error('Ошибка загрузки мероприятия:', error);
+        }
+        
+        updateCloudStatus(`✅ Загружено ${users.length} пользователей в облако`);
+        return true;
+        
+    } catch (error) {
+        console.error('Ошибка загрузки в облако:', error);
+        return false;
+    }
+}
+
+// Сохранение пользователя в облако
+async function saveUserToCloud(user) {
+    if (!supabaseClient || !isSupabaseReady) {
+        console.log('Облако недоступно, данные сохранены локально');
+        return false;
+    }
+    
+    try {
+        const { error } = await supabaseClient
+            .from('users')
+            .upsert(user, { onConflict: 'id' });
+        
+        if (error) throw error;
         console.log(`💾 Пользователь ${user.username} сохранён в облаке`);
+        updateCloudStatus(`💾 Сохранён: ${user.username}`);
+        return true;
+        
     } catch (error) {
         console.error('Ошибка сохранения в облако:', error);
+        return false;
     }
 }
 
 // Сохранение мероприятия в облако
 async function saveEventToCloud(event) {
-    if (!supabaseClient) return;
+    if (!supabaseClient || !isSupabaseReady) return false;
     
     try {
-        const { data: existing } = await supabaseClient
+        const { error } = await supabaseClient
             .from('events')
-            .select('id')
-            .eq('id', event.id)
-            .single();
+            .upsert(event, { onConflict: 'id' });
         
-        if (existing) {
-            await supabaseClient
-                .from('events')
-                .update(event)
-                .eq('id', event.id);
-        } else {
-            await supabaseClient
-                .from('events')
-                .insert([event]);
-        }
-        
+        if (error) throw error;
         console.log(`💾 Мероприятие ${event.name} сохранено в облаке`);
+        return true;
+        
     } catch (error) {
         console.error('Ошибка сохранения мероприятия:', error);
+        return false;
     }
 }
 
-// Синхронизация всех данных
-async function syncAllDataToCloud() {
-    if (!supabaseClient) {
-        alert('⏳ Подключение к облаку... Подождите');
-        return;
+// Полная синхронизация (скачать из облака)
+async function syncDownFromCloud() {
+    updateCloudStatus('🔄 Синхронизация...');
+    const result = await loadDataFromCloud();
+    if (result) {
+        alert('✅ Данные синхронизированы из облака! Страница обновится.');
+        setTimeout(() => location.reload(), 1500);
+    } else {
+        alert('⚠️ Не удалось синхронизировать. Проверьте подключение к интернету.');
     }
-    
-    const users = JSON.parse(localStorage.getItem('aktivchiki_users') || '[]');
-    const events = JSON.parse(localStorage.getItem('aktivchiki_events') || '[]');
-    
-    alert(`🔄 Синхронизация: ${users.length} пользователей, ${events.length} мероприятий`);
-    
-    for (const user of users) {
-        await saveUserToCloud(user);
-    }
-    
-    for (const event of events) {
-        await saveEventToCloud(event);
-    }
-    
-    alert('✅ Синхронизация завершена! Данные сохранены в облаке.');
 }
 
-// Подписка на изменения в реальном времени
-function subscribeToChanges() {
-    if (!supabaseClient) return;
-    
-    // Слушаем изменения пользователей
-    supabaseClient
-        .channel('users_changes')
-        .on('postgres_changes', 
-            { event: '*', schema: 'public', table: 'users' },
-            (payload) => {
-                console.log('🔄 Изменение в пользователях:', payload);
-                loadDataFromCloud(); // Перезагружаем данные
-            }
-        )
-        .subscribe();
-    
-    // Слушаем изменения мероприятий
-    supabaseClient
-        .channel('events_changes')
-        .on('postgres_changes', 
-            { event: '*', schema: 'public', table: 'events' },
-            (payload) => {
-                console.log('🔄 Изменение в мероприятиях:', payload);
-                loadDataFromCloud();
-            }
-        )
-        .subscribe();
+// Полная синхронизация (загрузить в облако)
+async function syncUpToCloud() {
+    updateCloudStatus('📤 Загрузка данных в облако...');
+    const result = await uploadLocalDataToCloud();
+    if (result) {
+        alert('✅ Данные загружены в облако! Теперь они доступны на других устройствах.');
+    } else if (!supabaseClient || !isSupabaseReady) {
+        alert('⚠️ Облако не подключено. Попробуйте нажать "Подключиться к облаку" сначала.');
+    } else {
+        alert('⚠️ Данные не загружены. Возможно, они уже есть в облаке.');
+    }
 }
 
 // Очистка облачных данных
 async function clearCloudData() {
-    if (!confirm('⚠️ Удалить ВСЕ данные из облака? Это действие необратимо!')) return;
+    if (!confirm('⚠️ УДАЛИТЬ ВСЕ ДАННЫЕ ИЗ ОБЛАКА? Это действие нельзя отменить!')) return;
     
-    if (!supabaseClient) return;
+    if (!supabaseClient || !isSupabaseReady) {
+        alert('❌ Облако не подключено');
+        return;
+    }
     
-    await supabaseClient.from('users').delete().neq('id', 'none');
-    await supabaseClient.from('events').delete().neq('id', 'none');
+    updateCloudStatus('🗑️ Очистка облака...');
     
-    alert('🗑️ Облачные данные удалены');
+    try {
+        await supabaseClient.from('users').delete().neq('id', 'none');
+        await supabaseClient.from('events').delete().neq('id', 'none');
+        updateCloudStatus('✅ Облако очищено');
+        alert('✅ Облако очищено');
+    } catch (error) {
+        console.error('Ошибка очистки:', error);
+        alert('❌ Ошибка очистки облака');
+    }
+}
+
+// Проверка статуса подключения
+function checkCloudStatus() {
+    if (isSupabaseReady && supabaseClient) {
+        updateCloudStatus('✅ Облако подключено');
+        return true;
+    } else {
+        updateCloudStatus('❌ Офлайн режим');
+        return false;
+    }
 }
 
 // Экспорт глобальных функций
 window.initSupabase = initSupabase;
-window.syncAllDataToCloud = syncAllDataToCloud;
+window.syncDownFromCloud = syncDownFromCloud;
+window.syncUpToCloud = syncUpToCloud;
 window.clearCloudData = clearCloudData;
+window.checkCloudStatus = checkCloudStatus;
+
+// Автоматическое подключение при загрузке страницы
+setTimeout(() => {
+    initSupabase();
+}, 2000);
