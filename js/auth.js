@@ -1,4 +1,10 @@
 // Система авторизации для Активчиков
+function syncToCloud() {
+    if (typeof saveUserToCloud === 'function') {
+        const users = JSON.parse(localStorage.getItem('aktivchiki_users') || '[]');
+        users.forEach(user => saveUserToCloud(user));
+    }
+}
 class AuthManager {
     constructor() {
         this.currentUser = null;
@@ -205,7 +211,12 @@ updateUI() {
                 sessionStorage.setItem('aktivchiki_currentUser', JSON.stringify(user));
             }
         }
-        if (typeof renderLeaderboard === 'function') renderLeaderboard(); // ДОБАВИТЬ ЭТУ СТРОКУ
+        if (typeof renderLeaderboard === 'function') renderLeaderboard();
+    
+        // Авто-синхронизация с облаком
+        if (typeof saveUserToCloud === 'function') {
+            saveUserToCloud(user);
+        }
     }
 
     addPoints(userId, points, season) {
