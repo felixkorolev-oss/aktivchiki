@@ -1654,3 +1654,245 @@ body {
     margin-top: 8px;
     font-size: 11px;
 }
+
+/* Добавьте в конец файла main.css */
+
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ РЕЙТИНГА ===== */
+
+/* Контейнер таблицы для горизонтальной прокрутки на мобильных */
+.ranking-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.ranking-table {
+    min-width: 500px;
+    width: 100%;
+}
+
+/* Стили для ячеек таблицы на мобильных */
+@media (max-width: 768px) {
+    .ranking-table th,
+    .ranking-table td {
+        padding: 10px 8px;
+        font-size: 13px;
+    }
+    
+    .ranking-table th:nth-child(3),
+    .ranking-table td:nth-child(3),
+    .ranking-table th:nth-child(4),
+    .ranking-table td:nth-child(4),
+    .ranking-table th:nth-child(5),
+    .ranking-table td:nth-child(5) {
+        white-space: nowrap;
+    }
+    
+    .user-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 120px;
+    }
+    
+    .user-avatar {
+        font-size: 24px;
+    }
+    
+    .user-name {
+        font-size: 14px;
+        font-weight: 500;
+    }
+}
+
+/* Адаптация топ-3 карточек на мобильных */
+@media (max-width: 768px) {
+    .top-three {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    .top-card {
+        width: 105px;
+        padding: 10px 8px;
+    }
+    
+    .top-card.rank-1 {
+        transform: translateY(-10px);
+    }
+    
+    .top-card.rank-2,
+    .top-card.rank-3 {
+        transform: translateY(5px);
+    }
+    
+    .rank-medal {
+        font-size: 28px;
+        margin-bottom: 5px;
+    }
+    
+    .top-avatar {
+        width: 55px !important;
+        height: 55px !important;
+        font-size: 28px !important;
+    }
+    
+    .top-name {
+        font-size: 11px;
+        margin: 5px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90px;
+    }
+    
+    .top-points {
+        font-size: 10px;
+    }
+    
+    .top-events {
+        font-size: 9px;
+    }
+    
+    .top-title {
+        font-size: 8px;
+        padding: 2px 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 90px;
+    }
+}
+
+/* Очень маленькие экраны */
+@media (max-width: 480px) {
+    .top-three {
+        gap: 6px;
+    }
+    
+    .top-card {
+        width: 95px;
+        padding: 8px 6px;
+    }
+    
+    .top-avatar {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 24px !important;
+    }
+    
+    .rank-medal {
+        font-size: 24px;
+    }
+    
+    .top-name {
+        font-size: 10px;
+    }
+    
+    .top-points {
+        font-size: 9px;
+    }
+    
+    .ranking-table th,
+    .ranking-table td {
+        padding: 8px 6px;
+        font-size: 11px;
+    }
+    
+    .user-avatar {
+        font-size: 20px;
+    }
+    
+    .user-name {
+        font-size: 12px;
+    }
+}
+
+/* Стили для пустого рейтинга */
+.empty-leaderboard {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-dim);
+    font-size: 16px;
+    background: var(--bg-card);
+    border-radius: 30px;
+    width: 100%;
+}
+
+/* Стили для заголовков таблицы */
+.ranking-table th {
+    background: rgba(0,0,0,0.3);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+
+/* Анимация появления строк таблицы */
+.ranking-table tr {
+    animation: rowFadeIn 0.3s ease;
+}
+
+@keyframes rowFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Стили для ячеек */
+.rank-cell {
+    font-weight: bold;
+    width: 60px;
+}
+
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar {
+    font-size: 28px;
+}
+
+.level-cell {
+    text-align: center;
+}
+
+.points-cell {
+    text-align: center;
+}
+
+.events-cell {
+    text-align: center;
+}
+
+/* Адаптация сезонного селектора */
+@media (max-width: 768px) {
+    .season-header {
+        flex-direction: column;
+        text-align: center;
+        padding: 15px;
+    }
+    
+    .season-buttons {
+        justify-content: center;
+    }
+    
+    .season-btn {
+        padding: 6px 14px;
+        font-size: 12px;
+    }
+    
+    .season-timer {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+}
