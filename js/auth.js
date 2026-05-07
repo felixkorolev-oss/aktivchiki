@@ -1,4 +1,4 @@
-// Система авторизации для Активчиков с автоматической синхронизацией
+// Система авторизации для Активчиков с автоматической синхронизацией через Supabase
 class AuthManager {
     constructor() {
         this.currentUser = null;
@@ -186,6 +186,11 @@ class AuthManager {
         await this.saveUsers();
         await this.login(username, password);
         
+        // Автоматическая синхронизация с облаком
+        if (typeof window.syncToCloud === 'function') {
+            await window.syncToCloud();
+        }
+        
         if (isFirstUser) {
             this.showToast('👑 Поздравляем! Вы стали первым администратором!', 'success');
         } else {
@@ -286,6 +291,11 @@ class AuthManager {
         
         if (typeof renderLeaderboard === 'function') renderLeaderboard();
         if (typeof renderProfile === 'function') renderProfile();
+        
+        // Автоматическая синхронизация с облаком
+        if (typeof window.syncToCloud === 'function') {
+            window.syncToCloud();
+        }
     }
 
     async addPoints(userId, points, season) {
@@ -354,21 +364,19 @@ class AuthManager {
     }
 
     showToast(message, type) {
-        if (typeof window.showToast === 'function') {
-            window.showToast(message, type);
-        } else {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<span>${message}</span>`;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100%)';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<span>${message}</span>`;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 }
 
@@ -380,6 +388,7 @@ window.addUserCoins = async (userId, amount) => {
     await window.authManager?.addCoins(userId, amount);
     window.authManager?.showToast(`💰 Добавлено ${amount} монет!`, 'success');
     if (typeof renderAdminUsers === 'function') renderAdminUsers();
+    if (typeof window.syncToCloud === 'function') window.syncToCloud();
 };
 
 window.addUserPoints = async (userId, amount) => {
@@ -387,6 +396,7 @@ window.addUserPoints = async (userId, amount) => {
     window.authManager?.showToast(`⭐ Добавлено ${amount} очков!`, 'success');
     if (typeof renderAdminUsers === 'function') renderAdminUsers();
     if (typeof renderLeaderboard === 'function') renderLeaderboard();
+    if (typeof window.syncToCloud === 'function') window.syncToCloud();
 };
 
 window.resetUserSeason = async (userId) => {
@@ -399,6 +409,7 @@ window.resetUserSeason = async (userId) => {
             window.authManager.showToast(`🔄 Сезонные очки сброшены`, 'info');
             if (typeof renderLeaderboard === 'function') renderLeaderboard();
             if (typeof renderAdminUsers === 'function') renderAdminUsers();
+            if (typeof window.syncToCloud === 'function') window.syncToCloud();
         }
     }
 };
@@ -419,6 +430,7 @@ window.giveReward = async () => {
     window.authManager?.showToast(`🎁 Награда выдана!`, 'success');
     if (typeof renderAdminUsers === 'function') renderAdminUsers();
     if (typeof renderLeaderboard === 'function') renderLeaderboard();
+    if (typeof window.syncToCloud === 'function') window.syncToCloud();
     
     document.getElementById('rewardCoins').value = '';
     document.getElementById('rewardPoints').value = '';
