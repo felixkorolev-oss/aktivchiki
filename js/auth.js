@@ -1,4 +1,4 @@
-// Система авторизации для Активчиков с синхронизацией через Supabase
+// Система авторизации для Активчиков с автоматической синхронизацией
 class AuthManager {
     constructor() {
         this.currentUser = null;
@@ -8,7 +8,6 @@ class AuthManager {
     }
 
     async init() {
-        // Загружаем пользователей из localStorage или Supabase
         await this.loadUsers();
         this.isLoading = false;
         
@@ -26,7 +25,6 @@ class AuthManager {
         this.checkAdminVisibility();
         this.updateStatsDisplay();
         
-        // Обновляем рейтинг и профиль
         if (typeof renderLeaderboard === 'function') renderLeaderboard();
         if (typeof renderProfile === 'function') renderProfile();
         if (typeof renderShop === 'function') renderShop();
@@ -51,7 +49,7 @@ class AuthManager {
             }
         }
         
-        // Если Supabase не доступен, грузим из localStorage
+        // Резерв: загрузка из localStorage
         const stored = localStorage.getItem('aktivchiki_users');
         if (stored) {
             try {
@@ -77,7 +75,7 @@ class AuthManager {
         try {
             const { error } = await window.supabaseClient
                 .from('users')
-                .upsert(user, { onConflict: 'id' });
+                .upsert({ ...user, updated_at: new Date().toISOString() }, { onConflict: 'id' });
             
             if (error) throw error;
             console.log(`💾 Пользователь ${user.username} синхронизирован с облаком`);
@@ -88,28 +86,15 @@ class AuthManager {
         }
     }
 
-    async syncAllUsersToCloud() {
-        if (!window.supabaseClient || !window.isSupabaseReady) {
-            console.log('Облако не доступно');
-            return false;
-        }
-        
-        let successCount = 0;
-        for (const user of this.users) {
-            const success = await this.syncUserToCloud(user);
-            if (success) successCount++;
-        }
-        
-        console.log(`📤 Синхронизировано ${successCount} из ${this.users.length} пользователей`);
-        return successCount > 0;
-    }
-
     async saveUsers() {
         this.saveUsersToLocal();
-        await this.syncAllUsersToCloud();
         this.updateStatsDisplay();
         
-        // Обновляем рейтинг и профиль
+        // Автоматическая синхронизация с облаком
+        for (const user of this.users) {
+            await this.syncUserToCloud(user);
+        }
+        
         if (typeof renderLeaderboard === 'function') renderLeaderboard();
         if (typeof renderProfile === 'function') renderProfile();
     }
@@ -193,7 +178,8 @@ class AuthManager {
             unlockedBgs: ['default'],
             unlockedFrames: ['default'],
             unlockedAchievements: [],
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            updated_at: new Date().toISOString()
         };
 
         this.users.push(newUser);
@@ -289,6 +275,7 @@ class AuthManager {
     async updateUser(user) {
         const index = this.users.findIndex(u => u.id === user.id);
         if (index !== -1) {
+            user.updated_at = new Date().toISOString();
             this.users[index] = user;
             await this.saveUsers();
             if (this.currentUser && this.currentUser.id === user.id) {
@@ -367,19 +354,21 @@ class AuthManager {
     }
 
     showToast(message, type) {
-        const container = document.getElementById('toastContainer');
-        if (!container) return;
-        
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = `<span>${message}</span>`;
-        container.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(100%)';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+        } else {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
     }
 }
 
