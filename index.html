@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Активчики | Школьная платформа активностей</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=Fredoka+One&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,7 +12,7 @@
 <body>
     <div class="preloader" id="preloader">
         <div class="emoji-loader">🎮</div>
-        <div class="loader-text">Загрузка...</div>
+        <div class="loader-text">Загрузка Активчиков...</div>
         <div class="loader-bar"></div>
     </div>
 
@@ -93,12 +93,14 @@
                 <!-- Остальные участники в таблице -->
                 <div class="ranking-table-container">
                     <h3><i class="fas fa-list-ol"></i> Все участники</h3>
-                    <table class="ranking-table">
-                        <thead>
-                            <tr><th>Место</th><th>Участник</th><th>Уровень</th><th>Очки сезона</th><th>Мероприятий</th></tr>
-                        </thead>
-                        <tbody id="leaderboardBody"></tbody>
-                    </table>
+                    <div style="overflow-x: auto;">
+                        <table class="ranking-table">
+                            <thead>
+                                <tr><th>Место</th><th>Участник</th><th>Уровень</th><th>Очки сезона</th><th>Мероприятий</th></tr>
+                            </thead>
+                            <tbody id="leaderboardBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -144,8 +146,8 @@
                 <div class="admin-tabs">
                     <button class="admin-tab-btn active" data-admin-tab="registrations">📝 Заявки</button>
                     <button class="admin-tab-btn" data-admin-tab="users">👥 Пользователи</button>
-                    <button class="admin-tab-btn" data-admin-tab="events">📅 Управление ивентами</button>
-                    <button class="admin-tab-btn" data-admin-tab="rewards">🎁 Выдать награды</button>
+                    <button class="admin-tab-btn" data-admin-tab="events">📅 Ивенты</button>
+                    <button class="admin-tab-btn" data-admin-tab="rewards">🎁 Награды</button>
                 </div>
                 <div id="adminRegistrationsTab" class="admin-tab-content active">
                     <div id="adminRegistrationsList" class="admin-list"></div>
@@ -167,29 +169,15 @@
                 </div>
             </div>
 
-            <!-- Хранилище (только админ) -->
+            <!-- Хранилище -->
             <div id="storagePane" class="content-pane">
-                <div class="storage-buttons" style="margin-top: 15px;">
-                    <button class="btn-primary" onclick="syncAllDataToCloud()">
-                        <i class="fas fa-cloud-upload-alt"></i> Синхронизировать с облаком
-                    </button>
-                    <button class="btn-secondary" onclick="initSupabase()">
-                        <i class="fas fa-cloud-download-alt"></i> Загрузить из облака
-                    </button>
-                    <button class="btn-danger" onclick="clearCloudData()" style="background: var(--danger);">
-                        <i class="fas fa-trash-alt"></i> Очистить облако
-                    </button>
-                </div>
-                <div id="cloudStatus" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 15px; font-size: 12px;">
-                    ☁️ Статус: <span id="cloudStatusText">Не подключено</span>
-                </div>
                 <div class="storage-header">
                     <h2><i class="fas fa-database"></i> Управление данными</h2>
                 </div>
                 <div class="storage-buttons">
-                    <button class="btn-primary" id="exportDataBtn"><i class="fas fa-download"></i> Сохранить данные в файл</button>
+                    <button class="btn-primary" id="exportDataBtn"><i class="fas fa-download"></i> Сохранить в файл</button>
                     <label class="btn-secondary" style="cursor:pointer;"><i class="fas fa-upload"></i> Загрузить из файла<input type="file" id="importFileInput" accept=".json" style="display:none;"></label>
-                    <button class="btn-danger" id="clearDataBtn"><i class="fas fa-trash-alt"></i> Очистить данные</button>
+                    <button class="btn-danger" id="clearDataBtn"><i class="fas fa-trash-alt"></i> Очистить всё</button>
                 </div>
                 <div id="storageInfo"></div>
             </div>
@@ -239,26 +227,26 @@
     <div id="createEventModal" class="modal">
         <div class="modal-card create-event-modal">
             <div class="modal-header" style="background: linear-gradient(135deg, #FF6B6B, #A855F7);">
-                <h3><i class="fas fa-magic"></i> Создать новое мероприятие</h3>
+                <h3><i class="fas fa-magic"></i> Создать мероприятие</h3>
                 <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="createEventForm">
                     <div class="form-group">
-                        <label>🎯 Название мероприятия</label>
-                        <input type="text" id="eventName" required placeholder="Например: Турнир по настольным играм">
+                        <label>🎯 Название</label>
+                        <input type="text" id="eventName" required placeholder="Название мероприятия">
                     </div>
                     <div class="form-group">
                         <label>📝 Описание</label>
-                        <textarea id="eventDesc" rows="3" required placeholder="Расскажи, что ждёт участников..."></textarea>
+                        <textarea id="eventDesc" rows="3" required placeholder="Описание..."></textarea>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>⭐ Очки за участие</label>
+                            <label>⭐ Очки</label>
                             <input type="number" id="eventPoints" value="50" required>
                         </div>
                         <div class="form-group">
-                            <label>🪙 Монеты за участие</label>
+                            <label>🪙 Монеты</label>
                             <input type="number" id="eventCoins" value="100" required>
                         </div>
                     </div>
@@ -276,7 +264,7 @@
                             <input type="text" id="eventEmoji" value="🎯" maxlength="2">
                         </div>
                     </div>
-                    <button type="submit" class="btn-primary full">✨ Создать мероприятие</button>
+                    <button type="submit" class="btn-primary full">✨ Создать</button>
                 </form>
             </div>
         </div>
@@ -284,6 +272,8 @@
 
     <div id="toastContainer" class="toast-container"></div>
 
+    <!-- Скрипты -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/auth.js"></script>
     <script src="js/leaderboard.js"></script>
     <script src="js/events.js"></script>
@@ -291,9 +281,6 @@
     <script src="js/admin.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/app.js"></script>
-
-    <!-- Supabase библиотека -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase.js"></script>
 </body>
 </html>
