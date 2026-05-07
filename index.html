@@ -23,6 +23,7 @@
         .cloud-status:hover { background: rgba(78,205,196,0.3); }
         .cloud-status.online { color: #00E676; }
         .cloud-status.offline { color: #FF5252; }
+        .cloud-status.sync { color: #FFE66D; animation: pulse 1s infinite; }
         .sync-indicator {
             display: flex;
             align-items: center;
@@ -32,6 +33,15 @@
             padding: 4px 10px;
             border-radius: 20px;
         }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .fa-spin { animation: spin 1s linear infinite; }
         @media (max-width: 768px) {
             .cloud-status span:not(i), .sync-indicator span { display: none; }
             .cloud-status, .sync-indicator { padding: 5px 8px; }
@@ -75,17 +85,85 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(255,107,107,0.4);
         }
-        .admin-list { background: var(--bg-card); border-radius: 24px; padding: 20px; max-height: 500px; overflow-y: auto; }
-        .admin-request-item, .admin-user-item { background: rgba(78,205,196,0.08); padding: 15px; margin-bottom: 12px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; border-left: 3px solid var(--primary); }
-        .admin-action-btn { background: var(--success); border: none; padding: 8px 20px; border-radius: 25px; color: white; cursor: pointer; font-weight: bold; transition: all 0.2s; }
-        .admin-tabs { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid var(--border-glow); }
-        .admin-tab-btn { padding: 10px 24px; background: rgba(255,107,107,0.15); border: none; border-radius: 30px; color: var(--text); cursor: pointer; transition: all 0.3s; font-weight: 600; font-size: 14px; }
-        .admin-tab-btn.active { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
-        .admin-tab-content { display: none; animation: fadeIn 0.3s ease; }
-        .admin-tab-content.active { display: block; }
-        .admin-reward-form { background: var(--bg-card); padding: 25px; border-radius: 24px; display: flex; flex-direction: column; gap: 15px; }
-        .admin-reward-form select, .admin-reward-form input { padding: 12px 16px; background: rgba(255,255,255,0.08); border: 1px solid var(--border-glow); border-radius: 30px; color: var(--text); font-size: 14px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .admin-list {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .admin-request-item, .admin-user-item {
+            background: rgba(78,205,196,0.08);
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-left: 3px solid var(--primary);
+        }
+        .admin-action-btn {
+            background: var(--success);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .admin-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-glow);
+        }
+        .admin-tab-btn {
+            padding: 10px 24px;
+            background: rgba(255,107,107,0.15);
+            border: none;
+            border-radius: 30px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .admin-tab-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+        .admin-tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .admin-tab-content.active {
+            display: block;
+        }
+        .admin-reward-form {
+            background: var(--bg-card);
+            padding: 25px;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .admin-reward-form select, .admin-reward-form input {
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border-glow);
+            border-radius: 30px;
+            color: var(--text);
+            font-size: 14px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -107,12 +185,12 @@
             </div>
             <div style="display: flex; align-items: center; gap: 15px;">
                 <div class="sync-indicator" id="syncIndicator">
-                    <i class="fas fa-database"></i>
-                    <span>Локально</span>
+                    <i class="fas fa-cloud"></i>
+                    <span>Синхр.</span>
                 </div>
-                <div class="cloud-status" id="cloudStatus">
-                    <i class="fas fa-save"></i>
-                    <span id="cloudStatusText">📁 Локальное хранение</span>
+                <div class="cloud-status" id="cloudStatus" onclick="window.checkAndReconnect && window.checkAndReconnect()" title="Статус синхронизации">
+                    <i class="fas fa-cloud"></i>
+                    <span id="cloudStatusText">Подключение...</span>
                 </div>
                 <div class="user-welcome" id="userWelcome">
                     <div class="user-profile-btn" id="userProfileBtn">
@@ -182,7 +260,9 @@
                     <h3><i class="fas fa-list-ol"></i> Все участники</h3>
                     <div style="overflow-x: auto;">
                         <table class="ranking-table">
-                            <thead><tr><th>Место</th><th>Участник</th><th>Уровень</th><th>Очки сезона</th><th>Мероприятий</th></tr></thead>
+                            <thead>
+                                <tr><th>Место</th><th>Участник</th><th>Уровень</th><th>Очки сезона</th><th>Мероприятий</th></tr>
+                            </thead>
                             <tbody id="leaderboardBody"></tbody>
                         </table>
                     </div>
@@ -234,9 +314,15 @@
                     <button class="admin-tab-btn" data-admin-tab="events">📅 Ивенты</button>
                     <button class="admin-tab-btn" data-admin-tab="rewards">🎁 Награды</button>
                 </div>
-                <div id="adminRegistrationsTab" class="admin-tab-content active"><div id="adminRegistrationsList" class="admin-list"></div></div>
-                <div id="adminUsersTab" class="admin-tab-content"><div id="adminUsersList" class="admin-list"></div></div>
-                <div id="adminEventsTab" class="admin-tab-content"><div id="adminEventsList" class="admin-list"></div></div>
+                <div id="adminRegistrationsTab" class="admin-tab-content active">
+                    <div id="adminRegistrationsList" class="admin-list"></div>
+                </div>
+                <div id="adminUsersTab" class="admin-tab-content">
+                    <div id="adminUsersList" class="admin-list"></div>
+                </div>
+                <div id="adminEventsTab" class="admin-tab-content">
+                    <div id="adminEventsList" class="admin-list"></div>
+                </div>
                 <div id="adminRewardsTab" class="admin-tab-content">
                     <div class="admin-reward-form">
                         <h3>Выдать награду пользователю</h3>
@@ -254,6 +340,12 @@
                     <h2><i class="fas fa-database"></i> Управление данными</h2>
                 </div>
                 <div class="storage-buttons" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+                    <button class="btn-primary" id="syncToCloudBtn" style="background: linear-gradient(135deg, #4ECDC4, #44B3AA);">
+                        <i class="fas fa-cloud-upload-alt"></i> Отправить в облако
+                    </button>
+                    <button class="btn-secondary" id="syncFromCloudBtn">
+                        <i class="fas fa-cloud-download-alt"></i> Загрузить из облака
+                    </button>
                     <button class="btn-primary" id="exportDataBtn"><i class="fas fa-download"></i> Сохранить в файл</button>
                     <label class="btn-secondary" style="cursor:pointer;"><i class="fas fa-upload"></i> Загрузить из файла
                         <input type="file" id="importFileInput" accept=".json" style="display:none;">
@@ -262,16 +354,11 @@
                 </div>
                 <div id="storageInfo"></div>
                 <div style="margin-top: 20px; padding: 15px; background: rgba(78,205,196,0.1); border-radius: 15px;">
-                    <h4><i class="fas fa-info-circle"></i> Как перенести данные на другое устройство:</h4>
-                    <ol style="margin-top: 10px; margin-left: 20px; font-size: 13px;">
-                        <li>На этом устройстве нажмите <strong>"Сохранить в файл"</strong></li>
-                        <li>Перешлите файл на другое устройство</li>
-                        <li>На другом устройстве нажмите <strong>"Загрузить из файла"</strong></li>
-                        <li>Все данные появятся автоматически!</li>
-                    </ol>
-                    <p style="margin-top: 10px; font-size: 12px; color: var(--text-dim);">
-                        📁 Данные хранятся в вашем браузере и никуда не отправляются.
-                        Чтобы синхронизировать данные между устройствами, используйте экспорт/импорт файла.
+                    <h4><i class="fas fa-info-circle"></i> Автоматическая синхронизация через Google Sheets</h4>
+                    <p style="margin-top: 10px; font-size: 13px;">
+                        ✅ Данные автоматически синхронизируются между всеми устройствами<br>
+                        📊 Все изменения сохраняются в вашу Google таблицу<br>
+                        🔄 Синхронизация происходит каждые 30 секунд
                     </p>
                 </div>
             </div>
@@ -290,16 +377,36 @@
                     <button class="auth-switch-btn active" data-auth="login">Вход</button>
                     <button class="auth-switch-btn" data-auth="register">Регистрация</button>
                 </div>
+                
                 <form id="loginForm" class="auth-form active">
-                    <div class="input-group"><i class="fas fa-user"></i><input type="text" id="loginUsername" placeholder="Твой никнейм" required></div>
-                    <div class="input-group"><i class="fas fa-lock"></i><input type="password" id="loginPassword" placeholder="Пароль" required></div>
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="loginUsername" name="username" placeholder="Твой никнейм" autocomplete="username" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="loginPassword" name="password" placeholder="Пароль" autocomplete="current-password" required>
+                    </div>
                     <button type="submit" class="btn-primary full">Войти</button>
                 </form>
+                
                 <form id="registerForm" class="auth-form">
-                    <div class="input-group"><i class="fas fa-user"></i><input type="text" id="regUsername" placeholder="Придумай никнейм" required></div>
-                    <div class="input-group"><i class="fas fa-envelope"></i><input type="email" id="regEmail" placeholder="Email (необязательно)"></div>
-                    <div class="input-group"><i class="fas fa-lock"></i><input type="password" id="regPassword" placeholder="Пароль (мин. 4 символа)" required></div>
-                    <div class="input-group"><i class="fas fa-lock"></i><input type="password" id="regConfirmPassword" placeholder="Повтори пароль" required></div>
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="regUsername" name="username" placeholder="Придумай никнейм" autocomplete="username" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="regEmail" name="email" placeholder="Email (необязательно)" autocomplete="email">
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="regPassword" name="new-password" placeholder="Пароль (минимум 4 символа)" autocomplete="new-password" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="regConfirmPassword" name="confirm-password" placeholder="Повтори пароль" autocomplete="new-password" required>
+                    </div>
                     <button type="submit" class="btn-primary full">Зарегистрироваться</button>
                 </form>
             </div>
@@ -308,27 +415,55 @@
 
     <!-- Модалка деталей ивента -->
     <div id="eventModal" class="modal">
-        <div class="modal-card"><div class="modal-header"><h3 id="eventModalTitle"></h3><button class="modal-close">&times;</button></div><div class="modal-body" id="eventModalBody"></div></div>
+        <div class="modal-card event-detail-modal">
+            <div class="modal-header">
+                <h3 id="eventModalTitle"></h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="eventModalBody"></div>
+        </div>
     </div>
 
     <!-- Модалка создания ивента -->
     <div id="createEventModal" class="modal">
-        <div class="modal-card">
+        <div class="modal-card create-event-modal">
             <div class="modal-header" style="background: linear-gradient(135deg, #FF6B6B, #A855F7);">
                 <h3><i class="fas fa-magic"></i> Создать мероприятие</h3>
                 <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="createEventForm">
-                    <div class="form-group"><label>🎯 Название</label><input type="text" id="eventName" required></div>
-                    <div class="form-group"><label>📝 Описание</label><textarea id="eventDesc" rows="3" required></textarea></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>⭐ Очки</label><input type="number" id="eventPoints" value="50" required></div>
-                        <div class="form-group"><label>🪙 Монеты</label><input type="number" id="eventCoins" value="100" required></div>
+                    <div class="form-group">
+                        <label>🎯 Название</label>
+                        <input type="text" id="eventName" required placeholder="Название мероприятия">
+                    </div>
+                    <div class="form-group">
+                        <label>📝 Описание</label>
+                        <textarea id="eventDesc" rows="3" required placeholder="Описание..."></textarea>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>📅 Сезон</label><select id="eventSeason"><option value="season_spring2026">Весна 2026</option><option value="season_summer2026">Лето 2026</option><option value="season_autumn2026">Осень 2026</option></select></div>
-                        <div class="form-group"><label>🎨 Эмодзи</label><input type="text" id="eventEmoji" value="🎯" maxlength="2"></div>
+                        <div class="form-group">
+                            <label>⭐ Очки</label>
+                            <input type="number" id="eventPoints" value="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label>🪙 Монеты</label>
+                            <input type="number" id="eventCoins" value="100" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>📅 Сезон</label>
+                            <select id="eventSeason">
+                                <option value="season_spring2026">Весна 2026</option>
+                                <option value="season_summer2026">Лето 2026</option>
+                                <option value="season_autumn2026">Осень 2026</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>🎨 Эмодзи</label>
+                            <input type="text" id="eventEmoji" value="🎯" maxlength="2">
+                        </div>
                     </div>
                     <button type="submit" class="btn-primary full">✨ Создать</button>
                 </form>
@@ -345,9 +480,11 @@
     <script src="js/shop.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/storage.js"></script>
+    <script src="js/sync.js"></script>
     <script src="js/app.js"></script>
     
     <script>
+        // Глобальная функция для показа уведомлений
         window.showToast = function(message, type) {
             const container = document.getElementById('toastContainer');
             if (!container) return;
@@ -362,13 +499,66 @@
             }, 3000);
         };
         
+        // Кнопки синхронизации
+        document.getElementById('syncToCloudBtn')?.addEventListener('click', async () => {
+            if (typeof window.pushToCloud === 'function') {
+                await window.pushToCloud();
+            } else if (typeof window.saveToCloud === 'function') {
+                await window.saveToCloud();
+            } else {
+                window.showToast('❌ Функция синхронизации не загружена', 'error');
+            }
+        });
+        
+        document.getElementById('syncFromCloudBtn')?.addEventListener('click', async () => {
+            if (typeof window.forceSync === 'function') {
+                await window.forceSync();
+            } else if (typeof window.loadFromCloud === 'function') {
+                await window.loadFromCloud();
+            } else {
+                window.showToast('❌ Функция синхронизации не загружена', 'error');
+            }
+        });
+        
+        // Обновление статуса
+        function updateCloudStatusDisplay() {
+            const statusDiv = document.getElementById('cloudStatus');
+            const statusText = document.getElementById('cloudStatusText');
+            if (!statusText) return;
+            
+            if (navigator.onLine) {
+                statusDiv.className = 'cloud-status online';
+                if (window.isSyncing === true) {
+                    statusText.innerHTML = '🔄 Синхр...';
+                } else {
+                    statusText.innerHTML = '☁️ Онлайн';
+                }
+            } else {
+                statusDiv.className = 'cloud-status offline';
+                statusText.innerHTML = '📱 Офлайн';
+            }
+        }
+        
+        // Прелоадер
         setTimeout(() => {
             const preloader = document.getElementById('preloader');
             if (preloader) preloader.style.display = 'none';
         }, 1500);
         
+        setInterval(updateCloudStatusDisplay, 3000);
+        setTimeout(updateCloudStatusDisplay, 500);
+        
+        // Отслеживание интернета
+        window.addEventListener('online', () => {
+            updateCloudStatusDisplay();
+            if (typeof window.loadFromCloud === 'function') {
+                window.loadFromCloud();
+            }
+        });
+        window.addEventListener('offline', updateCloudStatusDisplay);
+        
         console.log('=== АКТИВЧИКИ ЗАГРУЖЕНЫ ===');
-        console.log('Данные хранятся локально. Для переноса на другое устройство используйте "Сохранить в файл"');
+        console.log('Google Sheets синхронизация готова к работе');
     </script>
 </body>
 </html>
