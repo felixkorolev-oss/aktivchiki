@@ -8,6 +8,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/animations.css">
+    <style>
+        /* Дополнительные стили для статуса облака */
+        .cloud-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(78,205,196,0.15);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .cloud-status.online { color: #00E676; }
+        .cloud-status.offline { color: #FF5252; }
+        .cloud-status.sync { color: #FFE66D; animation: pulse 1s infinite; }
+        .cloud-status i { font-size: 12px; }
+    </style>
 </head>
 <body>
     <div class="preloader" id="preloader">
@@ -26,11 +42,17 @@
                 <h1 class="site-title">Актив<span class="highlight">чики</span></h1>
                 <div class="school-badge">Школьная платформа</div>
             </div>
-            <div class="user-welcome" id="userWelcome">
-                <div class="user-profile-btn" id="userProfileBtn">
-                    <span id="userAvatar">👤</span>
-                    <span id="userNameDisplay">Гость</span>
-                    <i class="fas fa-chevron-down"></i>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="cloud-status" id="cloudStatus">
+                    <i class="fas fa-cloud"></i>
+                    <span id="cloudStatusText">Подключение...</span>
+                </div>
+                <div class="user-welcome" id="userWelcome">
+                    <div class="user-profile-btn" id="userProfileBtn">
+                        <span id="userAvatar">👤</span>
+                        <span id="userNameDisplay">Гость</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
                 </div>
             </div>
         </header>
@@ -87,10 +109,8 @@
                     <div class="season-timer" id="seasonTimer">До конца сезона: 45 дней</div>
                 </div>
 
-                <!-- Топ 3 в карточках -->
                 <div class="top-three" id="topThreeContainer"></div>
 
-                <!-- Остальные участники в таблице -->
                 <div class="ranking-table-container">
                     <h3><i class="fas fa-list-ol"></i> Все участники</h3>
                     <div style="overflow-x: auto;">
@@ -174,12 +194,22 @@
                 <div class="storage-header">
                     <h2><i class="fas fa-database"></i> Управление данными</h2>
                 </div>
-                <div class="storage-buttons">
+                <div class="storage-buttons" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
                     <button class="btn-primary" id="exportDataBtn"><i class="fas fa-download"></i> Сохранить в файл</button>
                     <label class="btn-secondary" style="cursor:pointer;"><i class="fas fa-upload"></i> Загрузить из файла<input type="file" id="importFileInput" accept=".json" style="display:none;"></label>
+                    <button class="btn-primary" id="syncToCloudBtn" style="background: linear-gradient(135deg, #4ECDC4, #44B3AA);"><i class="fas fa-cloud-upload-alt"></i> Синхронизировать</button>
+                    <button class="btn-secondary" id="syncFromCloudBtn"><i class="fas fa-cloud-download-alt"></i> Загрузить из облака</button>
                     <button class="btn-danger" id="clearDataBtn"><i class="fas fa-trash-alt"></i> Очистить всё</button>
                 </div>
                 <div id="storageInfo"></div>
+                <div style="margin-top: 20px; padding: 15px; background: rgba(78,205,196,0.1); border-radius: 15px;">
+                    <h4><i class="fas fa-info-circle"></i> Как синхронизировать данные между устройствами:</h4>
+                    <ol style="margin-top: 10px; margin-left: 20px; font-size: 13px;">
+                        <li>На первом устройстве нажмите <strong>"Синхронизировать"</strong> - данные сохранятся в облако</li>
+                        <li>На втором устройстве нажмите <strong>"Загрузить из облака"</strong> - данные появятся</li>
+                        <li>При изменении данных на любом устройстве, нажмите <strong>"Синхронизировать"</strong> снова</li>
+                    </ol>
+                </div>
             </div>
         </main>
     </div>
@@ -274,6 +304,7 @@
 
     <!-- Скрипты -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/leaderboard.js"></script>
     <script src="js/events.js"></script>
@@ -281,6 +312,55 @@
     <script src="js/admin.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/app.js"></script>
-    <script src="js/supabase.js"></script>
+    
+    <script>
+        // Дополнительная инициализация для статуса облака
+        function updateCloudStatusUI() {
+            const statusDiv = document.getElementById('cloudStatus');
+            const statusText = document.getElementById('cloudStatusText');
+            if (statusDiv && statusText) {
+                if (window.isSupabaseReady && window.supabaseClient) {
+                    statusDiv.className = 'cloud-status online';
+                    statusText.innerHTML = '☁️ Облако онлайн';
+                } else if (window.isSupabaseReady === false && window.supabaseClient === undefined) {
+                    statusDiv.className = 'cloud-status offline';
+                    statusText.innerHTML = '☁️ Офлайн режим';
+                } else {
+                    statusDiv.className = 'cloud-status sync';
+                    statusText.innerHTML = '🔄 Подключение...';
+                }
+            }
+        }
+        
+        // Обновляем статус каждые 3 секунды
+        setInterval(updateCloudStatusUI, 3000);
+        setTimeout(updateCloudStatusUI, 1000);
+        
+        // Кнопки синхронизации
+        document.getElementById('syncToCloudBtn')?.addEventListener('click', async () => {
+            if (window.syncAllUsersToCloud && window.syncAllEventsToCloud) {
+                document.getElementById('cloudStatusText').innerHTML = '📤 Синхронизация...';
+                await window.syncAllUsersToCloud();
+                await window.syncAllEventsToCloud();
+                document.getElementById('cloudStatusText').innerHTML = '✅ Синхронизировано!';
+                setTimeout(updateCloudStatusUI, 2000);
+            } else if (window.syncAllDataToCloud) {
+                await window.syncAllDataToCloud();
+            } else {
+                alert('Функция синхронизации не загружена. Проверьте подключение к интернету.');
+            }
+        });
+        
+        document.getElementById('syncFromCloudBtn')?.addEventListener('click', async () => {
+            if (window.loadDataFromCloud) {
+                document.getElementById('cloudStatusText').innerHTML = '📥 Загрузка...';
+                await window.loadDataFromCloud();
+                document.getElementById('cloudStatusText').innerHTML = '✅ Загружено!';
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                alert('Функция загрузки не загружена.');
+            }
+        });
+    </script>
 </body>
 </html>
