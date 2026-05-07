@@ -29,9 +29,28 @@
         .cloud-status.sync { color: #FFE66D; animation: pulse 1s infinite; }
         .cloud-status i { font-size: 12px; }
         
+        .sync-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            background: rgba(0,0,0,0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .fa-spin {
+            animation: spin 1s linear infinite;
         }
         
         /* Мобильная адаптация */
@@ -41,6 +60,9 @@
             }
             .cloud-status {
                 padding: 5px 8px;
+            }
+            .sync-indicator span {
+                display: none;
             }
         }
         
@@ -86,7 +108,11 @@
                 <div class="school-badge">Школьная платформа</div>
             </div>
             <div style="display: flex; align-items: center; gap: 15px;">
-                <div class="cloud-status" id="cloudStatus" onclick="checkAndReconnect()" title="Статус облака (нажмите для переподключения)">
+                <div class="sync-indicator" id="syncIndicator">
+                    <i class="fas fa-cloud"></i>
+                    <span>Авто-синхр.</span>
+                </div>
+                <div class="cloud-status" id="cloudStatus" onclick="window.checkAndReconnect && window.checkAndReconnect()" title="Статус облака (нажмите для переподключения)">
                     <i class="fas fa-cloud"></i>
                     <span id="cloudStatusText">Подключение...</span>
                 </div>
@@ -242,25 +268,23 @@
                     <label class="btn-secondary" style="cursor:pointer;"><i class="fas fa-upload"></i> Загрузить из файла
                         <input type="file" id="importFileInput" accept=".json" style="display:none;">
                     </label>
-                    <button class="btn-primary" id="syncToCloudBtn" style="background: linear-gradient(135deg, #4ECDC4, #44B3AA);">
-                        <i class="fas fa-cloud-upload-alt"></i> Синхронизировать
-                    </button>
-                    <button class="btn-secondary" id="downloadFromCloudBtn">
-                        <i class="fas fa-cloud-download-alt"></i> Загрузить из облака
+                    <button class="btn-primary" id="forceSyncBtn" style="background: linear-gradient(135deg, #4ECDC4, #44B3AA);">
+                        <i class="fas fa-sync-alt"></i> Принудительная синхронизация
                     </button>
                     <button class="btn-danger" id="clearDataBtn"><i class="fas fa-trash-alt"></i> Очистить всё</button>
                 </div>
                 <div id="storageInfo"></div>
                 <div style="margin-top: 20px; padding: 15px; background: rgba(78,205,196,0.1); border-radius: 15px;">
-                    <h4><i class="fas fa-info-circle"></i> Как синхронизировать данные между устройствами:</h4>
-                    <ol style="margin-top: 10px; margin-left: 20px; font-size: 13px;">
-                        <li>На первом устройстве нажмите <strong>"Синхронизировать"</strong> - данные сохранятся в облако</li>
-                        <li>На втором устройстве нажмите <strong>"Загрузить из облака"</strong> - данные появятся</li>
-                        <li>При изменении данных на любом устройстве, нажмите <strong>"Синхронизировать"</strong> снова</li>
-                    </ol>
+                    <h4><i class="fas fa-info-circle"></i> Автоматическая синхронизация</h4>
+                    <p style="margin-top: 10px; font-size: 13px;">
+                        ✅ <strong>Авто-синхронизация включена по умолчанию</strong><br>
+                        📡 Данные синхронизируются в реальном времени между всеми устройствами<br>
+                        🔄 При изменении профиля, покупках или участии в мероприятиях данные автоматически отправляются в облако<br>
+                        📥 При подключении к интернету данные автоматически загружаются из облака
+                    </p>
                     <p style="margin-top: 10px; font-size: 12px; color: var(--text-dim);">
                         <i class="fas fa-shield-alt"></i> Если облако не настроено, данные сохраняются только локально в браузере.
-                        Чтобы перенести данные на другое устройство, используйте <strong>"Сохранить в файл"</strong> и <strong>"Загрузить из файла"</strong>.
+                        Для настройки облака замените SUPABASE_URL и SUPABASE_ANON_KEY в файле supabase.js.
                     </p>
                 </div>
             </div>
@@ -367,32 +391,8 @@
     <script src="js/app.js"></script>
     
     <script>
-        // Глобальные функции для синхронизации
-        window.syncToCloud = async function() {
-            console.log('Запуск синхронизации...');
-            if (typeof window.syncAllDataToCloud === 'function') {
-                await window.syncAllDataToCloud();
-            } else if (typeof window.uploadLocalDataToCloud === 'function') {
-                await window.uploadLocalDataToCloud();
-            } else {
-                console.error('Функции синхронизации не найдены');
-                showToast('❌ Функция синхронизации не загружена. Используйте "Сохранить в файл" для переноса данных.', 'error');
-            }
-        };
-        
-        window.downloadFromCloud = async function() {
-            console.log('Запуск загрузки из облака...');
-            if (typeof window.loadDataFromCloud === 'function') {
-                await window.loadDataFromCloud();
-                showToast('✅ Данные загружены из облака! Страница обновится.', 'success');
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                console.error('Функция загрузки не найдена');
-                showToast('❌ Функция загрузки не загружена. Используйте "Загрузить из файла" для переноса данных.', 'error');
-            }
-        };
-        
-        function showToast(message, type) {
+        // Глобальные функции
+        window.showToast = function(message, type) {
             const container = document.getElementById('toastContainer');
             if (!container) return;
             const toast = document.createElement('div');
@@ -404,75 +404,53 @@
                 toast.style.transform = 'translateX(100%)';
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
-        }
-        
-        // Функция проверки и переподключения к облаку
-        window.checkAndReconnect = async function() {
-            const statusText = document.getElementById('cloudStatusText');
-            if (statusText) statusText.innerHTML = '🔄 Переподключение...';
-            if (typeof window.initSupabase === 'function') {
-                await window.initSupabase();
-            } else {
-                console.error('initSupabase не найдена');
-                if (statusText) statusText.innerHTML = '❌ Ошибка';
-            }
         };
         
-        // Обновление статуса облака в интерфейсе
+        // Принудительная синхронизация
+        document.getElementById('forceSyncBtn')?.addEventListener('click', async () => {
+            if (typeof window.forceSync === 'function') {
+                window.showToast('🔄 Принудительная синхронизация...', 'info');
+                await window.forceSync();
+            } else {
+                window.showToast('❌ Функция синхронизации не загружена', 'error');
+            }
+        });
+        
+        // Обновление статуса
         function updateCloudStatusDisplay() {
             const statusDiv = document.getElementById('cloudStatus');
             const statusText = document.getElementById('cloudStatusText');
+            const syncIndicator = document.getElementById('syncIndicator');
+            
             if (!statusText) return;
             
             if (window.isSupabaseReady && window.supabaseClient) {
                 statusDiv.className = 'cloud-status online';
                 statusText.innerHTML = '☁️ Онлайн';
+                if (syncIndicator) syncIndicator.style.color = '#00E676';
             } else if (window.isSupabaseReady === false && window.supabaseClient === undefined) {
                 statusDiv.className = 'cloud-status offline';
                 statusText.innerHTML = '☁️ Офлайн';
-            } else if (window.isSupabaseReady === false) {
-                statusDiv.className = 'cloud-status offline';
-                statusText.innerHTML = '⚠️ Не настроен';
+                if (syncIndicator) syncIndicator.style.color = '#FF5252';
             } else {
                 statusDiv.className = 'cloud-status sync';
                 statusText.innerHTML = '🔄 Подключение...';
+                if (syncIndicator) syncIndicator.style.color = '#FFE66D';
             }
         }
         
-        // Назначаем обработчики кнопок после загрузки DOM
-        document.addEventListener('DOMContentLoaded', function() {
-            // Кнопки синхронизации
-            const syncBtn = document.getElementById('syncToCloudBtn');
-            const downloadBtn = document.getElementById('downloadFromCloudBtn');
-            
-            if (syncBtn) {
-                syncBtn.addEventListener('click', window.syncToCloud);
-            }
-            if (downloadBtn) {
-                downloadBtn.addEventListener('click', window.downloadFromCloud);
-            }
-            
-            // Периодическое обновление статуса
-            setInterval(updateCloudStatusDisplay, 3000);
-            setTimeout(updateCloudStatusDisplay, 500);
-            
-            // Прелоадер
-            setTimeout(() => {
-                const preloader = document.getElementById('preloader');
-                if (preloader) preloader.style.display = 'none';
-            }, 1500);
-        });
+        // Прелоадер
+        setTimeout(() => {
+            const preloader = document.getElementById('preloader');
+            if (preloader) preloader.style.display = 'none';
+        }, 1500);
         
-        // Вывод информации в консоль для отладки
+        // Периодическое обновление статуса
+        setInterval(updateCloudStatusDisplay, 3000);
+        setTimeout(updateCloudStatusDisplay, 500);
+        
         console.log('=== АКТИВЧИКИ ЗАГРУЖЕНЫ ===');
-        console.log('Дата загрузки:', new Date().toLocaleString());
-        console.log('Статус Supabase:', window.isSupabaseReady);
-        console.log('Доступные функции:', {
-            syncAllDataToCloud: typeof window.syncAllDataToCloud,
-            uploadLocalDataToCloud: typeof window.uploadLocalDataToCloud,
-            loadDataFromCloud: typeof window.loadDataFromCloud,
-            initSupabase: typeof window.initSupabase
-        });
+        console.log('Авто-синхронизация активна');
     </script>
 </body>
 </html>
