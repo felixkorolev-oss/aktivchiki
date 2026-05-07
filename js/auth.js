@@ -1,4 +1,4 @@
-// Система авторизации для Активчиков с автоматической синхронизацией через Supabase
+// Система авторизации для Активчиков с автоматической синхронизацией
 class AuthManager {
     constructor() {
         this.currentUser = null;
@@ -31,25 +31,12 @@ class AuthManager {
     }
 
     async loadUsers() {
-        // Сначала пробуем загрузить из Supabase
-        if (window.supabaseClient && window.isSupabaseReady) {
-            try {
-                const { data, error } = await window.supabaseClient
-                    .from('users')
-                    .select('*');
-                
-                if (!error && data && data.length > 0) {
-                    this.users = data;
-                    this.saveUsersToLocal();
-                    console.log(`📥 Загружено ${data.length} пользователей из Supabase`);
-                    return;
-                }
-            } catch(e) {
-                console.error('Ошибка загрузки из Supabase:', e);
-            }
+        // Сначала пробуем загрузить из облачного хранилища
+        if (typeof window.loadFromCloud === 'function' && navigator.onLine) {
+            await window.loadFromCloud();
         }
         
-        // Резерв: загрузка из localStorage
+        // Загрузка из localStorage
         const stored = localStorage.getItem('aktivchiki_users');
         if (stored) {
             try {
@@ -69,31 +56,16 @@ class AuthManager {
         localStorage.setItem('aktivchiki_users', JSON.stringify(this.users, null, 2));
     }
 
-    async syncUserToCloud(user) {
-        if (!window.supabaseClient || !window.isSupabaseReady) return false;
-        
-        try {
-            const { error } = await window.supabaseClient
-                .from('users')
-                .upsert({ ...user, updated_at: new Date().toISOString() }, { onConflict: 'id' });
-            
-            if (error) throw error;
-            console.log(`💾 Пользователь ${user.username} синхронизирован с облаком`);
-            return true;
-        } catch(e) {
-            console.error('Ошибка синхронизации с облаком:', e);
-            return false;
+    async syncToCloud() {
+        if (typeof window.saveToCloud === 'function' && navigator.onLine) {
+            await window.saveToCloud();
         }
     }
 
     async saveUsers() {
         this.saveUsersToLocal();
         this.updateStatsDisplay();
-        
-        // Автоматическая синхронизация с облаком
-        for (const user of this.users) {
-            await this.syncUserToCloud(user);
-        }
+        await this.syncToCloud();
         
         if (typeof renderLeaderboard === 'function') renderLeaderboard();
         if (typeof renderProfile === 'function') renderProfile();
@@ -185,11 +157,6 @@ class AuthManager {
         this.users.push(newUser);
         await this.saveUsers();
         await this.login(username, password);
-        
-        // Автоматическая синхронизация с облаком
-        if (typeof window.syncToCloud === 'function') {
-            await window.syncToCloud();
-        }
         
         if (isFirstUser) {
             this.showToast('👑 Поздравляем! Вы стали первым администратором!', 'success');
@@ -291,11 +258,6 @@ class AuthManager {
         
         if (typeof renderLeaderboard === 'function') renderLeaderboard();
         if (typeof renderProfile === 'function') renderProfile();
-        
-        // Автоматическая синхронизация с облаком
-        if (typeof window.syncToCloud === 'function') {
-            window.syncToCloud();
-        }
     }
 
     async addPoints(userId, points, season) {
@@ -364,19 +326,21 @@ class AuthManager {
     }
 
     showToast(message, type) {
-        const container = document.getElementById('toastContainer');
-        if (!container) return;
-        
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = `<span>${message}</span>`;
-        container.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(100%)';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        if (typeof window.showToast === 'function') {
+            window.showToast(message, type);
+        } else {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
     }
 }
 
@@ -388,7 +352,7 @@ window.addUserCoins = async (userId, amount) => {
     await window.authManager?.addCoins(userId, amount);
     window.authManager?.showToast(`💰 Добавлено ${amount} монет!`, 'success');
     if (typeof renderAdminUsers === 'function') renderAdminUsers();
-    if (typeof window.syncToCloud === 'function') window.syncToCloud();
+    if (typeof window.saveToCloud === 'function') window.saveToCloud();
 };
 
 window.addUserPoints = async (userId, amount) => {
@@ -396,7 +360,7 @@ window.addUserPoints = async (userId, amount) => {
     window.authManager?.showToast(`⭐ Добавлено ${amount} очков!`, 'success');
     if (typeof renderAdminUsers === 'function') renderAdminUsers();
     if (typeof renderLeaderboard === 'function') renderLeaderboard();
-    if (typeof window.syncToCloud === 'function') window.syncToCloud();
+    if (typeof window.saveToCloud === 'function') window.saveToCloud();
 };
 
 window.resetUserSeason = async (userId) => {
@@ -409,7 +373,7 @@ window.resetUserSeason = async (userId) => {
             window.authManager.showToast(`🔄 Сезонные очки сброшены`, 'info');
             if (typeof renderLeaderboard === 'function') renderLeaderboard();
             if (typeof renderAdminUsers === 'function') renderAdminUsers();
-            if (typeof window.syncToCloud === 'function') window.syncToCloud();
+            if (typeof window.saveToCloud === 'function') window.saveToCloud();
         }
     }
 };
@@ -430,7 +394,7 @@ window.giveReward = async () => {
     window.authManager?.showToast(`🎁 Награда выдана!`, 'success');
     if (typeof renderAdminUsers === 'function') renderAdminUsers();
     if (typeof renderLeaderboard === 'function') renderLeaderboard();
-    if (typeof window.syncToCloud === 'function') window.syncToCloud();
+    if (typeof window.saveToCloud === 'function') window.saveToCloud();
     
     document.getElementById('rewardCoins').value = '';
     document.getElementById('rewardPoints').value = '';
