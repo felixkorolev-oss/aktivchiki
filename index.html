@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/animations.css">
     <style>
-        /* Дополнительные стили для статуса облака */
         .cloud-status {
             display: flex;
             align-items: center;
@@ -21,14 +20,10 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        .cloud-status:hover {
-            background: rgba(78,205,196,0.3);
-        }
+        .cloud-status:hover { background: rgba(78,205,196,0.3); }
         .cloud-status.online { color: #00E676; }
         .cloud-status.offline { color: #FF5252; }
         .cloud-status.sync { color: #FFE66D; animation: pulse 1s infinite; }
-        .cloud-status i { font-size: 12px; }
-        
         .sync-indicator {
             display: flex;
             align-items: center;
@@ -38,35 +33,19 @@
             padding: 4px 10px;
             border-radius: 20px;
         }
-        
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
-        
         @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-        
-        .fa-spin {
-            animation: spin 1s linear infinite;
-        }
-        
-        /* Мобильная адаптация */
+        .fa-spin { animation: spin 1s linear infinite; }
         @media (max-width: 768px) {
-            .cloud-status span:not(i) {
-                display: none;
-            }
-            .cloud-status {
-                padding: 5px 8px;
-            }
-            .sync-indicator span {
-                display: none;
-            }
+            .cloud-status span:not(i), .sync-indicator span { display: none; }
+            .cloud-status, .sync-indicator { padding: 5px 8px; }
         }
-        
-        /* Стили для уведомлений */
         .toast-container {
             position: fixed;
             bottom: 20px;
@@ -184,9 +163,7 @@
                     <h3><i class="fas fa-list-ol"></i> Все участники</h3>
                     <div style="overflow-x: auto;">
                         <table class="ranking-table">
-                            <thead>
-                                <tr><th>Место</th><th>Участник</th><th>Уровень</th><th>Очки сезона</th><th>Мероприятий</th></tr>
-                            </thead>
+                            <thead><tr><th>Место</th><th>Участник</th><th>Уровень</th><th>Очки сезона</th><th>Мероприятий</th></tr></thead>
                             <tbody id="leaderboardBody"></tbody>
                         </table>
                     </div>
@@ -238,15 +215,9 @@
                     <button class="admin-tab-btn" data-admin-tab="events">📅 Ивенты</button>
                     <button class="admin-tab-btn" data-admin-tab="rewards">🎁 Награды</button>
                 </div>
-                <div id="adminRegistrationsTab" class="admin-tab-content active">
-                    <div id="adminRegistrationsList" class="admin-list"></div>
-                </div>
-                <div id="adminUsersTab" class="admin-tab-content">
-                    <div id="adminUsersList" class="admin-list"></div>
-                </div>
-                <div id="adminEventsTab" class="admin-tab-content">
-                    <div id="adminEventsList" class="admin-list"></div>
-                </div>
+                <div id="adminRegistrationsTab" class="admin-tab-content active"><div id="adminRegistrationsList" class="admin-list"></div></div>
+                <div id="adminUsersTab" class="admin-tab-content"><div id="adminUsersList" class="admin-list"></div></div>
+                <div id="adminEventsTab" class="admin-tab-content"><div id="adminEventsList" class="admin-list"></div></div>
                 <div id="adminRewardsTab" class="admin-tab-content">
                     <div class="admin-reward-form">
                         <h3>Выдать награду пользователю</h3>
@@ -269,35 +240,23 @@
                         <input type="file" id="importFileInput" accept=".json" style="display:none;">
                     </label>
                     <button class="btn-primary" id="forceSyncBtn" style="background: linear-gradient(135deg, #4ECDC4, #44B3AA);">
-                        <i class="fas fa-sync-alt"></i> Принудительная синхронизация
+                        <i class="fas fa-sync-alt"></i> Синхронизировать
                     </button>
                     <button class="btn-danger" id="clearDataBtn"><i class="fas fa-trash-alt"></i> Очистить всё</button>
                 </div>
                 <div id="storageInfo"></div>
                 <div style="margin-top: 20px; padding: 15px; background: rgba(78,205,196,0.1); border-radius: 15px;">
                     <h4><i class="fas fa-info-circle"></i> Автоматическая синхронизация</h4>
-                    <p style="margin-top: 10px; font-size: 13px;">
-                        ✅ <strong>Авто-синхронизация включена по умолчанию</strong><br>
-                        📡 Данные синхронизируются в реальном времени между всеми устройствами<br>
-                        🔄 При изменении профиля, покупках или участии в мероприятиях данные автоматически отправляются в облако<br>
-                        📥 При подключении к интернету данные автоматически загружаются из облака
-                    </p>
-                    <p style="margin-top: 10px; font-size: 12px; color: var(--text-dim);">
-                        <i class="fas fa-shield-alt"></i> Если облако не настроено, данные сохраняются только локально в браузере.
-                        Для настройки облака замените SUPABASE_URL и SUPABASE_ANON_KEY в файле supabase.js.
-                    </p>
+                    <p style="margin-top: 10px; font-size: 13px;">✅ Авто-синхронизация включена по умолчанию</p>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Модалка авторизации -->
+    <!-- Модалки -->
     <div id="authModal" class="modal">
         <div class="modal-card">
-            <div class="modal-header">
-                <h3><i class="fas fa-star"></i> Добро пожаловать в Активчики!</h3>
-                <button class="modal-close">&times;</button>
-            </div>
+            <div class="modal-header"><h3><i class="fas fa-star"></i> Добро пожаловать!</h3><button class="modal-close">&times;</button></div>
             <div class="modal-body">
                 <div class="auth-switch">
                     <button class="auth-switch-btn active" data-auth="login">Вход</button>
@@ -311,7 +270,7 @@
                 <form id="registerForm" class="auth-form">
                     <input type="text" id="regUsername" placeholder="Придумай никнейм" required>
                     <input type="email" id="regEmail" placeholder="Email (необязательно)">
-                    <input type="password" id="regPassword" placeholder="Пароль (минимум 4 символа)" required>
+                    <input type="password" id="regPassword" placeholder="Пароль (мин. 4 символа)" required>
                     <input type="password" id="regConfirmPassword" placeholder="Повтори пароль" required>
                     <button type="submit" class="btn-primary full">Зарегистрироваться</button>
                 </form>
@@ -319,57 +278,24 @@
         </div>
     </div>
 
-    <!-- Модалка деталей ивента -->
     <div id="eventModal" class="modal">
-        <div class="modal-card event-detail-modal">
-            <div class="modal-header">
-                <h3 id="eventModalTitle"></h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body" id="eventModalBody"></div>
-        </div>
+        <div class="modal-card"><div class="modal-header"><h3 id="eventModalTitle"></h3><button class="modal-close">&times;</button></div><div class="modal-body" id="eventModalBody"></div></div>
     </div>
 
-    <!-- Модалка создания ивента -->
     <div id="createEventModal" class="modal">
-        <div class="modal-card create-event-modal">
-            <div class="modal-header" style="background: linear-gradient(135deg, #FF6B6B, #A855F7);">
-                <h3><i class="fas fa-magic"></i> Создать мероприятие</h3>
-                <button class="modal-close">&times;</button>
-            </div>
+        <div class="modal-card">
+            <div class="modal-header" style="background: linear-gradient(135deg, #FF6B6B, #A855F7);"><h3><i class="fas fa-magic"></i> Создать мероприятие</h3><button class="modal-close">&times;</button></div>
             <div class="modal-body">
                 <form id="createEventForm">
-                    <div class="form-group">
-                        <label>🎯 Название</label>
-                        <input type="text" id="eventName" required placeholder="Название мероприятия">
-                    </div>
-                    <div class="form-group">
-                        <label>📝 Описание</label>
-                        <textarea id="eventDesc" rows="3" required placeholder="Описание..."></textarea>
+                    <div class="form-group"><label>🎯 Название</label><input type="text" id="eventName" required></div>
+                    <div class="form-group"><label>📝 Описание</label><textarea id="eventDesc" rows="3" required></textarea></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>⭐ Очки</label><input type="number" id="eventPoints" value="50" required></div>
+                        <div class="form-group"><label>🪙 Монеты</label><input type="number" id="eventCoins" value="100" required></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group">
-                            <label>⭐ Очки</label>
-                            <input type="number" id="eventPoints" value="50" required>
-                        </div>
-                        <div class="form-group">
-                            <label>🪙 Монеты</label>
-                            <input type="number" id="eventCoins" value="100" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>📅 Сезон</label>
-                            <select id="eventSeason">
-                                <option value="season_spring2026">Весна 2026</option>
-                                <option value="season_summer2026">Лето 2026</option>
-                                <option value="season_autumn2026">Осень 2026</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>🎨 Эмодзи</label>
-                            <input type="text" id="eventEmoji" value="🎯" maxlength="2">
-                        </div>
+                        <div class="form-group"><label>📅 Сезон</label><select id="eventSeason"><option value="season_spring2026">Весна 2026</option><option value="season_summer2026">Лето 2026</option><option value="season_autumn2026">Осень 2026</option></select></div>
+                        <div class="form-group"><label>🎨 Эмодзи</label><input type="text" id="eventEmoji" value="🎯" maxlength="2"></div>
                     </div>
                     <button type="submit" class="btn-primary full">✨ Создать</button>
                 </form>
@@ -379,19 +305,26 @@
 
     <div id="toastContainer" class="toast-container"></div>
 
-    <!-- Скрипты -->
+    <!-- СКРИПТЫ - ПРАВИЛЬНЫЙ ПОРЯДОК ЗАГРУЗКИ -->
+    <!-- 1. Сначала Supabase библиотека -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/supabase.js"></script>
+    
+    <!-- 2. Затем базовые скрипты -->
     <script src="js/auth.js"></script>
     <script src="js/leaderboard.js"></script>
     <script src="js/events.js"></script>
     <script src="js/shop.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/storage.js"></script>
+    
+    <!-- 3. Потом supabase.js (он зависит от предыдущих) -->
+    <script src="js/supabase.js"></script>
+    
+    <!-- 4. И наконец app.js -->
     <script src="js/app.js"></script>
     
     <script>
-        // Глобальные функции
+        // Глобальная функция для показа уведомлений
         window.showToast = function(message, type) {
             const container = document.getElementById('toastContainer');
             if (!container) return;
@@ -406,13 +339,18 @@
             }, 3000);
         };
         
-        // Принудительная синхронизация
+        // Кнопка синхронизации
         document.getElementById('forceSyncBtn')?.addEventListener('click', async () => {
             if (typeof window.forceSync === 'function') {
-                window.showToast('🔄 Принудительная синхронизация...', 'info');
+                window.showToast('🔄 Синхронизация...', 'info');
                 await window.forceSync();
+            } else if (typeof window.syncFromCloud === 'function') {
+                window.showToast('🔄 Синхронизация...', 'info');
+                await window.syncFromCloud();
+                window.showToast('✅ Синхронизация завершена!', 'success');
             } else {
-                window.showToast('❌ Функция синхронизации не загружена', 'error');
+                window.showToast('❌ Функция синхронизации не загружена. Используйте "Сохранить в файл" для переноса данных.', 'error');
+                console.error('Доступные функции:', { forceSync: typeof window.forceSync, syncFromCloud: typeof window.syncFromCloud });
             }
         });
         
@@ -420,22 +358,17 @@
         function updateCloudStatusDisplay() {
             const statusDiv = document.getElementById('cloudStatus');
             const statusText = document.getElementById('cloudStatusText');
-            const syncIndicator = document.getElementById('syncIndicator');
-            
             if (!statusText) return;
             
             if (window.isSupabaseReady && window.supabaseClient) {
                 statusDiv.className = 'cloud-status online';
                 statusText.innerHTML = '☁️ Онлайн';
-                if (syncIndicator) syncIndicator.style.color = '#00E676';
-            } else if (window.isSupabaseReady === false && window.supabaseClient === undefined) {
+            } else if (window.isSupabaseReady === false) {
                 statusDiv.className = 'cloud-status offline';
                 statusText.innerHTML = '☁️ Офлайн';
-                if (syncIndicator) syncIndicator.style.color = '#FF5252';
             } else {
                 statusDiv.className = 'cloud-status sync';
                 statusText.innerHTML = '🔄 Подключение...';
-                if (syncIndicator) syncIndicator.style.color = '#FFE66D';
             }
         }
         
@@ -445,12 +378,16 @@
             if (preloader) preloader.style.display = 'none';
         }, 1500);
         
-        // Периодическое обновление статуса
         setInterval(updateCloudStatusDisplay, 3000);
-        setTimeout(updateCloudStatusDisplay, 500);
+        setTimeout(updateCloudStatusDisplay, 1000);
         
         console.log('=== АКТИВЧИКИ ЗАГРУЖЕНЫ ===');
-        console.log('Авто-синхронизация активна');
+        console.log('Проверка функций:', { 
+            forceSync: typeof window.forceSync,
+            syncFromCloud: typeof window.syncFromCloud,
+            initSupabase: typeof window.initSupabase,
+            supabaseClient: !!window.supabaseClient
+        });
     </script>
 </body>
 </html>
