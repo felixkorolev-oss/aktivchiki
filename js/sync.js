@@ -2,7 +2,7 @@
 // СИНХРОНИЗАЦИЯ ЧЕРЕЗ GOOGLE SHEETS
 // ============================================
 // ВСТАВЬТЕ ВАШ URL ИЗ GOOGLE APPS SCRIPT
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbydE-ERcuNKeiHTkR5PXzhdUKxwIgKx2rcqa5XbFDSNKH4z6R7VTjxonkYvHWby8H47Lw/exec';
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwj7HABnalhTAhTHbIciPIsZlc5BurC2EacmK6zWhtCQ1ksf2_6DBuswUuur0rfkYEQ3g/exec';
 
 let isSyncing = false;
 let lastSyncTime = null;
@@ -15,20 +15,25 @@ async function loadFromCloud() {
     try {
         updateSyncStatus('📥 Загрузка...');
         
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        
         const response = await fetch(SYNC_URL, {
             method: 'GET',
-            mode: 'cors',
+            signal: controller.signal,
             cache: 'no-cache'
         });
         
-        if (!response.ok) throw new Error('HTTP error');
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
         const result = await response.json();
         
         if (result.success && result.data) {
             const users = result.data;
             
-            // Преобразуем строки JSON обратно в объекты
+            // Обработка пользователей
             const processedUsers = users.map(user => ({
                 ...user,
                 seasonPoints: typeof user.seasonPoints === 'string' ? JSON.parse(user.seasonPoints || '{}') : (user.seasonPoints || {}),
@@ -53,16 +58,23 @@ async function loadFromCloud() {
                     }
                 }
                 window.authManager.saveUsersToLocal();
+                window.authManager.updateUI();
             }
             
             refreshUI();
-            updateSyncStatus(`✅ ${processedUsers.length} пользователей`);
+            updateSyncStatus(`✅ ${processedUsers.length} записей`);
             lastSyncTime = new Date();
             return true;
+        } else {
+            throw new Error(result.error || 'Ошибка загрузки');
         }
     } catch (error) {
         console.error('Ошибка загрузки:', error);
-        updateSyncStatus('⚠️ Ошибка', true);
+        if (error.name === 'AbortError') {
+            updateSyncStatus('⏱️ Таймаут', true);
+        } else {
+            updateSyncStatus('⚠️ Ошибка', true);
+        }
         return false;
     } finally {
         isSyncing = false;
@@ -80,11 +92,12 @@ async function saveToCloud() {
         const users = JSON.parse(localStorage.getItem('aktivchiki_users') || '[]');
         
         if (users.length === 0) {
-            updateSyncStatus('⚠️ Нет данных');
+            console.log('Нет данных для отправки');
+            updateSyncStatus('⚠️ Нет данных', true);
             return false;
         }
         
-        // Подготавливаем данные для отправки
+        // Подготавливаем данные
         const preparedUsers = users.map(user => ({
             id: user.id,
             username: user.username,
@@ -104,10 +117,14 @@ async function saveToCloud() {
             unlockedTitles: JSON.stringify(user.unlockedTitles || []),
             unlockedBgs: JSON.stringify(user.unlockedBgs || []),
             unlockedFrames: JSON.stringify(user.unlockedFrames || []),
+            unlockedAchievements: JSON.stringify(user.unlockedAchievements || []),
             participatedEvents: JSON.stringify(user.participatedEvents || []),
             createdAt: user.createdAt || new Date().toISOString(),
             updated_at: new Date().toISOString()
         }));
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
         
         const response = await fetch(SYNC_URL, {
             method: 'POST',
@@ -115,8 +132,11 @@ async function saveToCloud() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(preparedUsers)
+            body: JSON.stringify(preparedUsers),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         console.log(`📤 Отправлено ${users.length} пользователей в Google Sheets`);
         updateSyncStatus(`✅ ${users.length} отправлено`);
@@ -132,25 +152,35 @@ async function saveToCloud() {
     }
 }
 
-// Принудительная синхронизация
+// Принудительная синхронизация (загрузить из облака)
 async function forceSync() {
     updateSyncStatus('🔄 Синхронизация...');
     const success = await loadFromCloud();
     if (success && window.showToast) {
-        window.showToast('✅ Данные синхронизированы с Google Sheets!', 'success');
+        window.showToast('✅ Данные синхронизированы из Google Sheets!', 'success');
     } else if (window.showToast) {
         window.showToast('⚠️ Не удалось синхронизировать, проверьте интернет', 'error');
     }
     return success;
 }
 
-// Периодическая синхронизация
-function startPeriodicSync() {
+// Отправить локальные данные в облако
+async function pushToCloud() {
+    updateSyncStatus('📤 Отправка...');
+    const success = await saveToCloud();
+    if (success && window.showToast) {
+        window.showToast('✅ Данные отправлены в Google Sheets!', 'success');
+    }
+    return success;
+}
+
+// Автоматическая синхронизация (каждые 30 секунд)
+function startAutoSync() {
     setInterval(async () => {
         if (navigator.onLine && !isSyncing) {
             await loadFromCloud();
         }
-    }, 60000); // Каждую минуту
+    }, 30000);
 }
 
 // Обновление интерфейса
@@ -171,25 +201,40 @@ function updateSyncStatus(msg, isError = false) {
     if (syncIndicator) {
         if (isError) syncIndicator.style.color = '#FF5252';
         else if (msg.includes('✅')) syncIndicator.style.color = '#00E676';
-        else syncIndicator.style.color = '#FFE66D';
+        else if (msg.includes('🔄') || msg.includes('📥') || msg.includes('📤')) syncIndicator.style.color = '#FFE66D';
+        else syncIndicator.style.color = '#888';
     }
 }
 
-// Запуск
+// Запуск синхронизации
 async function initSync() {
     console.log('🔄 Инициализация Google Sheets синхронизации...');
     updateSyncStatus('🔄 Подключение...');
+    
+    // Проверяем, настроен ли URL
+    if (SYNC_URL.includes('ВАШ_ID')) {
+        console.warn('⚠️ ВНИМАНИЕ! Не настроен SYNC_URL в файле sync.js');
+        updateSyncStatus('⚠️ Настройте URL', true);
+        return false;
+    }
+    
+    // Загружаем данные
     await loadFromCloud();
-    startPeriodicSync();
+    
+    // Запускаем авто-синхронизацию
+    startAutoSync();
+    
     updateSyncStatus('✅ Активен');
+    return true;
 }
 
-// Экспорт
+// Экспорт функций
 window.initSync = initSync;
 window.loadFromCloud = loadFromCloud;
 window.saveToCloud = saveToCloud;
 window.forceSync = forceSync;
+window.pushToCloud = pushToCloud;
 
 // Автозапуск
-setTimeout(initSync, 1500);
+setTimeout(initSync, 2000);
 console.log('🔄 Модуль Google Sheets синхронизации загружен');
