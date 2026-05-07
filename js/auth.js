@@ -130,39 +130,39 @@ class AuthManager {
         this.showToast('👋 До скорой встречи!', 'info');
     }
 
-    updateUI() {
-        const userAvatar = document.getElementById('userAvatar');
-        const userNameDisplay = document.getElementById('userNameDisplay');
-        const mainActionBtn = document.getElementById('mainActionBtn');
-        const mainActionText = document.getElementById('mainActionText');
-        const userPointsCard = document.getElementById('userPointsCard');
-        const loginPromptCard = document.getElementById('loginPromptCard');
-        const userPointsStat = document.getElementById('userPointsStat');
-        const userCoinsDisplay = document.getElementById('userCoinsDisplay');
+updateUI() {
+    const userAvatar = document.getElementById('userAvatar');
+    const userNameDisplay = document.getElementById('userNameDisplay');
+    const mainActionBtn = document.getElementById('mainActionBtn');
+    const mainActionText = document.getElementById('mainActionText');
+    const userPointsCard = document.getElementById('userPointsCard');
+    const loginPromptCard = document.getElementById('loginPromptCard');
+    const userPointsStat = document.getElementById('userPointsStat');
+    const userCoinsDisplay = document.getElementById('userCoinsDisplay');
 
-        if (this.currentUser) {
-            if (userAvatar) userAvatar.innerHTML = this.currentUser.avatar || '👤';
-            if (userNameDisplay) userNameDisplay.innerHTML = this.currentUser.username;
-            if (mainActionText) mainActionText.innerHTML = 'Мой профиль';
-            if (userPointsCard) userPointsCard.style.display = 'flex';
-            if (loginPromptCard) loginPromptCard.style.display = 'none';
-            if (userPointsStat) userPointsStat.textContent = this.currentUser.points;
-            if (userCoinsDisplay) userCoinsDisplay.innerHTML = `🪙 ${this.currentUser.coins} монет`;
-            
-            this.checkDailyBonus();
-        } else {
-            if (userAvatar) userAvatar.innerHTML = '👤';
-            if (userNameDisplay) userNameDisplay.innerHTML = 'Гость';
-            if (mainActionText) mainActionText.innerHTML = 'Войти в профиль';
-            if (userPointsCard) userPointsCard.style.display = 'none';
-            if (loginPromptCard) loginPromptCard.style.display = 'flex';
-            if (userCoinsDisplay) userCoinsDisplay.innerHTML = '🪙 0 монет';
-        }
+    if (this.currentUser) {
+        if (userAvatar) userAvatar.innerHTML = this.currentUser.avatar || '👤';
+        if (userNameDisplay) userNameDisplay.innerHTML = this.currentUser.username;
+        if (mainActionText) mainActionText.innerHTML = 'Мой профиль';
+        if (userPointsCard) userPointsCard.style.display = 'flex';
+        if (loginPromptCard) loginPromptCard.style.display = 'none';
+        if (userPointsStat) userPointsStat.textContent = this.currentUser.points;
+        if (userCoinsDisplay) userCoinsDisplay.innerHTML = `🪙 ${this.currentUser.coins} монет`;
         
-        if (typeof renderProfile === 'function') renderProfile();
-        if (typeof renderLeaderboard === 'function') renderLeaderboard();
-        if (typeof renderShop === 'function') renderShop();
+        this.checkDailyBonus();
+    } else {
+        if (userAvatar) userAvatar.innerHTML = '👤';
+        if (userNameDisplay) userNameDisplay.innerHTML = 'Гость';
+        if (mainActionText) mainActionText.innerHTML = 'Войти в профиль';
+        if (userPointsCard) userPointsCard.style.display = 'none';
+        if (loginPromptCard) loginPromptCard.style.display = 'flex';
+        if (userCoinsDisplay) userCoinsDisplay.innerHTML = '🪙 0 монет';
     }
+    
+    if (typeof renderProfile === 'function') renderProfile();
+    if (typeof renderLeaderboard === 'function') renderLeaderboard(); // ДОБАВИТЬ ЭТУ СТРОКУ
+    if (typeof renderShop === 'function') renderShop();
+}
 
     checkAdminVisibility() {
         const adminTabs = document.querySelectorAll('.admin-only');
@@ -205,6 +205,7 @@ class AuthManager {
                 sessionStorage.setItem('aktivchiki_currentUser', JSON.stringify(user));
             }
         }
+        if (typeof renderLeaderboard === 'function') renderLeaderboard(); // ДОБАВИТЬ ЭТУ СТРОКУ
     }
 
     addPoints(userId, points, season) {
