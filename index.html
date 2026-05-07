@@ -169,6 +169,20 @@
 
             <!-- Хранилище (только админ) -->
             <div id="storagePane" class="content-pane">
+                <div class="storage-buttons" style="margin-top: 15px;">
+                    <button class="btn-primary" onclick="syncAllDataToCloud()">
+                        <i class="fas fa-cloud-upload-alt"></i> Синхронизировать с облаком
+                    </button>
+                    <button class="btn-secondary" onclick="initSupabase()">
+                        <i class="fas fa-cloud-download-alt"></i> Загрузить из облака
+                    </button>
+                    <button class="btn-danger" onclick="clearCloudData()" style="background: var(--danger);">
+                        <i class="fas fa-trash-alt"></i> Очистить облако
+                    </button>
+                </div>
+                <div id="cloudStatus" style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 15px; font-size: 12px;">
+                    ☁️ Статус: <span id="cloudStatusText">Не подключено</span>
+                </div>
                 <div class="storage-header">
                     <h2><i class="fas fa-database"></i> Управление данными</h2>
                 </div>
@@ -277,5 +291,9 @@
     <script src="js/admin.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/app.js"></script>
+
+    <!-- Supabase библиотека -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
 </body>
 </html>
