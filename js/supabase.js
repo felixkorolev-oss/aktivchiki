@@ -178,3 +178,297 @@ setTimeout(() => {
     initSupabase();
 }, 1000);
 });
+let syncEnabled = true;
+let lastSyncTime = null;
+let syncInterval = null;
+
+// Настройка подписки на изменения в реальном времени
+async function setupRealtimeSubscription() {
+    if (!supabaseClient || !isSupabaseReady) {
+        console.log('⏳ Ожидание подключения к Supabase...');
+        return false;
+    }
+    
+    try {
+        // Подписываемся на изменения в таблице users
+        const usersSubscription = supabaseClient
+            .channel('users-changes')
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'users' },
+                (payload) => {
+                    console.log('🔄 Изменение в пользователях:', payload.eventType);
+                    handleRemoteChange(payload);
+                }
+            )
+            .subscribe();
+        
+        // Подписываемся на изменения в таблице events
+        const eventsSubscription = supabaseClient
+            .channel('events-changes')
+            .on('postgres_changes', 
+                { event: '*', schema: 'public', table: 'events' },
+                (payload) => {
+                    console.log('🔄 Изменение в мероприятиях:', payload.eventType);
+                    handleRemoteEventChange(payload);
+                }
+            )
+            .subscribe();
+        
+        console.log('✅ Realtime подписки активированы');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Ошибка настройки Realtime:', error);
+        return false;
+    }
+}
+
+// Обработка удалённых изменений пользователей
+async function handleRemoteChange(payload) {
+    if (!syncEnabled) return;
+    
+    const localUsers = JSON.parse(localStorage.getItem('aktivchiki_users') || '[]');
+    const remoteUser = payload.new;
+    
+    switch(payload.eventType) {
+        case 'INSERT':
+            // Добавляем нового пользователя
+            if (!localUsers.find(u => u.id === remoteUser.id)) {
+                localUsers.push(remoteUser);
+                localStorage.setItem('aktivchiki_users', JSON.stringify(localUsers, null, 2));
+                console.log(`📥 Добавлен пользователь: ${remoteUser.username}`);
+                showAutoSyncNotification(`👤 Новый участник: ${remoteUser.username}`);
+                refreshUI();
+            }
+            break;
+            
+        case 'UPDATE':
+            // Обновляем существующего пользователя
+            const index = localUsers.findIndex(u => u.id === remoteUser.id);
+            if (index !== -1 && JSON.stringify(localUsers[index]) !== JSON.stringify(remoteUser)) {
+                localUsers[index] = remoteUser;
+                localStorage.setItem('aktivchiki_users', JSON.stringify(localUsers, null, 2));
+                console.log(`📝 Обновлён пользователь: ${remoteUser.username}`);
+                
+                // Если обновился текущий пользователь
+                if (window.authManager?.currentUser?.id === remoteUser.id) {
+                    window.authManager.currentUser = remoteUser;
+                    sessionStorage.setItem('aktivchiki_currentUser', JSON.stringify(remoteUser));
+                }
+                refreshUI();
+            }
+            break;
+            
+        case 'DELETE':
+            // Удаляем пользователя
+            const filtered = localUsers.filter(u => u.id !== payload.old.id);
+            localStorage.setItem('aktivchiki_users', JSON.stringify(filtered, null, 2));
+            console.log(`🗑️ Удалён пользователь: ${payload.old.username}`);
+            refreshUI();
+            break;
+    }
+}
+
+// Обработка удалённых изменений мероприятий
+async function handleRemoteEventChange(payload) {
+    if (!syncEnabled) return;
+    
+    const localEvents = JSON.parse(localStorage.getItem('aktivchiki_events') || '[]');
+    const remoteEvent = payload.new;
+    
+    switch(payload.eventType) {
+        case 'INSERT':
+            if (!localEvents.find(e => e.id === remoteEvent.id)) {
+                localEvents.push(remoteEvent);
+                localStorage.setItem('aktivchiki_events', JSON.stringify(localEvents, null, 2));
+                console.log(`📥 Добавлено мероприятие: ${remoteEvent.name}`);
+                showAutoSyncNotification(`🎯 Новое мероприятие: ${remoteEvent.name}`);
+                refreshUI();
+            }
+            break;
+            
+        case 'UPDATE':
+            const index = localEvents.findIndex(e => e.id === remoteEvent.id);
+            if (index !== -1) {
+                localEvents[index] = remoteEvent;
+                localStorage.setItem('aktivchiki_events', JSON.stringify(localEvents, null, 2));
+                console.log(`📝 Обновлено мероприятие: ${remoteEvent.name}`);
+                refreshUI();
+            }
+            break;
+            
+        case 'DELETE':
+            const filtered = localEvents.filter(e => e.id !== payload.old.id);
+            localStorage.setItem('aktivchiki_events', JSON.stringify(filtered, null, 2));
+            console.log(`🗑️ Удалено мероприятие: ${payload.old.name}`);
+            refreshUI();
+            break;
+    }
+}
+
+// Периодическая синхронизация (каждые 30 секунд - резервный вариант)
+function startPeriodicSync() {
+    if (syncInterval) clearInterval(syncInterval);
+    
+    syncInterval = setInterval(async () => {
+        if (!isSupabaseReady) return;
+        
+        console.log('🔄 Периодическая синхронизация...');
+        await syncFromCloud();
+    }, 30000); // Каждые 30 секунд
+}
+
+// Принудительная синхронизация из облака
+async function syncFromCloud() {
+    if (!supabaseClient || !isSupabaseReady) return false;
+    
+    try {
+        // Загружаем пользователей
+        const { data: users, error: usersError } = await supabaseClient
+            .from('users')
+            .select('*');
+        
+        if (!usersError && users) {
+            localStorage.setItem('aktivchiki_users', JSON.stringify(users, null, 2));
+            if (window.authManager) {
+                window.authManager.users = users;
+                // Обновляем текущего пользователя, если он изменился
+                if (window.authManager.currentUser) {
+                    const updatedUser = users.find(u => u.id === window.authManager.currentUser.id);
+                    if (updatedUser) {
+                        window.authManager.currentUser = updatedUser;
+                        sessionStorage.setItem('aktivchiki_currentUser', JSON.stringify(updatedUser));
+                    }
+                }
+            }
+        }
+        
+        // Загружаем мероприятия
+        const { data: events, error: eventsError } = await supabaseClient
+            .from('events')
+            .select('*');
+        
+        if (!eventsError && events) {
+            localStorage.setItem('aktivchiki_events', JSON.stringify(events, null, 2));
+        }
+        
+        refreshUI();
+        lastSyncTime = new Date();
+        updateSyncStatus(true);
+        return true;
+        
+    } catch (error) {
+        console.error('Ошибка синхронизации:', error);
+        updateSyncStatus(false);
+        return false;
+    }
+}
+
+// Автоматическая отправка изменений в облако
+async function autoPushToCloud() {
+    if (!supabaseClient || !isSupabaseReady || !syncEnabled) return false;
+    
+    try {
+        const localUsers = JSON.parse(localStorage.getItem('aktivchiki_users') || '[]');
+        const localEvents = JSON.parse(localStorage.getItem('aktivchiki_events') || '[]');
+        
+        // Получаем данные из облака для сравнения
+        const { data: cloudUsers } = await supabaseClient
+            .from('users')
+            .select('id, updated_at');
+        
+        // Отправляем только изменённых пользователей
+        for (const user of localUsers) {
+            const cloudVersion = cloudUsers?.find(u => u.id === user.id);
+            if (!cloudVersion || Date.now() - new Date(user.updated_at || 0) < 5000) {
+                await supabaseClient.from('users').upsert(user, { onConflict: 'id' });
+            }
+        }
+        
+        console.log('📤 Авто-отправка выполнена');
+        return true;
+        
+    } catch (error) {
+        console.error('Ошибка авто-отправки:', error);
+        return false;
+    }
+}
+
+// Обновление интерфейса после синхронизации
+function refreshUI() {
+    if (typeof renderLeaderboard === 'function') renderLeaderboard();
+    if (typeof renderProfile === 'function') renderProfile();
+    if (typeof renderEvents === 'function') renderEvents();
+    if (typeof renderShop === 'function') renderShop();
+    if (typeof renderAdminRegistrations === 'function') renderAdminRegistrations();
+    if (typeof renderAdminUsers === 'function') renderAdminUsers();
+}
+
+// Показ уведомления о синхронизации
+function showAutoSyncNotification(message) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.style.background = 'linear-gradient(135deg, #4ECDC4, #44B3AA)';
+    toast.innerHTML = `<i class="fas fa-cloud-upload-alt"></i> ${message}`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Обновление статуса синхронизации в интерфейсе
+function updateSyncStatus(success) {
+    const syncIndicator = document.getElementById('syncIndicator');
+    if (syncIndicator) {
+        if (success) {
+            syncIndicator.innerHTML = '<i class="fas fa-check-circle"></i> Синхронизировано';
+            syncIndicator.style.color = '#00E676';
+        } else {
+            syncIndicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Синхронизация...';
+            syncIndicator.style.color = '#FFE66D';
+        }
+        setTimeout(() => {
+            if (syncIndicator) syncIndicator.innerHTML = '<i class="fas fa-cloud"></i> Авто-синхр.';
+        }, 3000);
+    }
+}
+
+// Включение/выключение синхронизации
+function toggleSync(enabled) {
+    syncEnabled = enabled;
+    console.log(`Синхронизация ${enabled ? 'включена' : 'выключена'}`);
+    if (!enabled) {
+        if (syncInterval) clearInterval(syncInterval);
+    } else {
+        startPeriodicSync();
+    }
+}
+
+// Переопределяем функцию saveUsers для автоматической синхронизации
+const originalSaveUsers = window.authManager?.saveUsers;
+if (window.authManager) {
+    window.authManager.saveUsers = async function() {
+        originalSaveUsers?.call(this);
+        await autoPushToCloud();
+    };
+}
+
+// Запуск автоматической синхронизации
+async function startAutoSync() {
+    await initSupabase();
+    await setupRealtimeSubscription();
+    startPeriodicSync();
+    console.log('🔄 Автоматическая синхронизация запущена');
+}
+
+// Экспорт функций
+window.startAutoSync = startAutoSync;
+window.syncFromCloud = syncFromCloud;
+window.autoPushToCloud = autoPushToCloud;
+window.toggleSync = toggleSync;
+window.setupRealtimeSubscription = setupRealtimeSubscription;
