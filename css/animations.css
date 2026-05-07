@@ -1,0 +1,104 @@
+/* Анимации для Активчиков */
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.float-animation {
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(255,107,107,0.5); }
+    50% { box-shadow: 0 0 20px rgba(255,107,107,0.8); }
+}
+
+.pulse-glow {
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spin-slow {
+    animation: spin-slow 20s linear infinite;
+}
+
+@keyframes bounce-light {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.bounce-light {
+    animation: bounce-light 1s ease-in-out infinite;
+}
+
+/* Эффект появления для карточек */
+.card-appear {
+    animation: cardAppear 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes cardAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Мигающая звезда */
+@keyframes starTwinkle {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+.star-twinkle {
+    animation: starTwinkle 1.5s infinite;
+}
+
+/* Шейк при ошибке */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.shake {
+    animation: shake 0.3s ease-in-out;
+}
+
+/* Радужный градиент для рамки */
+@keyframes rainbowBorder {
+    0% { border-color: #FF6B6B; }
+    25% { border-color: #4ECDC4; }
+    50% { border-color: #FFE66D; }
+    75% { border-color: #A855F7; }
+    100% { border-color: #FF6B6B; }
+}
+
+.rainbow-border {
+    animation: rainbowBorder 3s linear infinite;
+}
+
+/* Снежинки (для зимнего сезона) */
+.snowflake {
+    position: fixed;
+    color: white;
+    user-select: none;
+    pointer-events: none;
+    z-index: 100;
+    animation: fall linear forwards;
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(100vh);
+        opacity: 0;
+    }
+}

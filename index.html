@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Активчики | Школьная платформа активностей</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=Fredoka+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/animations.css">
+</head>
+<body>
+    <div class="preloader" id="preloader">
+        <div class="emoji-loader">🎮</div>
+        <div class="loader-text">Загрузка...</div>
+        <div class="loader-bar"></div>
+    </div>
+
+    <div class="stars-bg"></div>
+    <div class="floating-shapes"></div>
+
+    <div class="app-wrapper">
+        <header class="main-header">
+            <div class="logo-area">
+                <div class="logo-icon">🎯</div>
+                <h1 class="site-title">Актив<span class="highlight">чики</span></h1>
+                <div class="school-badge">Школьная платформа</div>
+            </div>
+            <div class="user-welcome" id="userWelcome">
+                <div class="user-profile-btn" id="userProfileBtn">
+                    <span id="userAvatar">👤</span>
+                    <span id="userNameDisplay">Гость</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <button class="nav-btn active" data-tab="home"><i class="fas fa-home"></i><span>Главная</span></button>
+            <button class="nav-btn" data-tab="leaderboard"><i class="fas fa-chart-line"></i><span>Рейтинг</span></button>
+            <button class="nav-btn" data-tab="profile"><i class="fas fa-user-astronaut"></i><span>Профиль</span></button>
+            <button class="nav-btn" data-tab="events"><i class="fas fa-calendar-alt"></i><span>Мероприятия</span></button>
+            <button class="nav-btn" data-tab="shop"><i class="fas fa-store"></i><span>Магазин</span></button>
+            <button class="nav-btn admin-only" data-tab="admin" id="adminTabBtn" style="display:none;"><i class="fas fa-shield-alt"></i><span>Админ</span></button>
+            <button class="nav-btn admin-only" data-tab="storage" id="storageTabBtn" style="display:none;"><i class="fas fa-database"></i><span>Хранилище</span></button>
+        </nav>
+
+        <main class="main-content">
+            <!-- Главная -->
+            <div id="homePane" class="content-pane active">
+                <div class="welcome-hero">
+                    <div class="hero-emoji">🌟</div>
+                    <h2>Добро пожаловать в <span class="gradient-text">Активчики</span>!</h2>
+                    <p>Участвуй в школьных мероприятиях, зарабатывай баллы и становись лучшим!</p>
+                    <div class="hero-buttons">
+                        <button class="btn-primary" id="mainActionBtn"><i class="fas fa-user-plus"></i> <span id="mainActionText">Войти в профиль</span></button>
+                        <button class="btn-secondary" id="goToEventsBtn"><i class="fas fa-calendar-check"></i> Мероприятия</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card rainbow"><div class="stat-value" id="totalUsers">0</div><div class="stat-label">Участников</div><div class="stat-icon">👥</div></div>
+                    <div class="stat-card rainbow"><div class="stat-value" id="totalEventsCount">0</div><div class="stat-label">Мероприятий</div><div class="stat-icon">📅</div></div>
+                    <div class="stat-card rainbow" id="userPointsCard" style="display:none;"><div class="stat-value" id="userPointsStat">0</div><div class="stat-label">Мои очки</div><div class="stat-icon">⭐</div></div>
+                    <div class="stat-card rainbow" id="loginPromptCard" style="display:flex;"><div class="stat-value">🔐</div><div class="stat-label">Авторизуйтесь</div><div class="stat-icon">👇</div></div>
+                </div>
+
+                <div class="info-cards">
+                    <div class="info-card"><div class="info-icon">🏆</div><h3>Как заработать очки?</h3><p>Участвуй в мероприятиях, побеждай в конкурсах и выполняй задания!</p></div>
+                    <div class="info-card"><div class="info-icon">🎨</div><h3>Кастомизация</h3><p>За монеты можно купить крутые скины, титулы, рамки и фоны!</p></div>
+                    <div class="info-card"><div class="info-icon">📈</div><h3>Сезоны</h3><p>Каждый сезон новые соревнования! Сейчас идёт Весна 2026 🌸</p></div>
+                </div>
+            </div>
+
+            <!-- Рейтинг -->
+            <div id="leaderboardPane" class="content-pane">
+                <div class="season-header">
+                    <div class="season-selector">
+                        <div class="season-label">Выбери сезон:</div>
+                        <div class="season-buttons">
+                            <button class="season-btn" data-season="season_winter2025">❄️ Зима 2025</button>
+                            <button class="season-btn active" data-season="season_spring2026">🌸 Весна 2026</button>
+                            <button class="season-btn" data-season="season_summer2026">☀️ Лето 2026</button>
+                            <button class="season-btn" data-season="season_autumn2026">🍂 Осень 2026</button>
+                        </div>
+                    </div>
+                    <div class="season-timer" id="seasonTimer">До конца сезона: 45 дней</div>
+                </div>
+
+                <!-- Топ 3 в карточках -->
+                <div class="top-three" id="topThreeContainer"></div>
+
+                <!-- Остальные участники в таблице -->
+                <div class="ranking-table-container">
+                    <h3><i class="fas fa-list-ol"></i> Все участники</h3>
+                    <table class="ranking-table">
+                        <thead>
+                            <tr><th>Место</th><th>Участник</th><th>Уровень</th><th>Очки сезона</th><th>Мероприятий</th></tr>
+                        </thead>
+                        <tbody id="leaderboardBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Профиль -->
+            <div id="profilePane" class="content-pane">
+                <div id="profileContainer"></div>
+            </div>
+
+            <!-- Мероприятия -->
+            <div id="eventsPane" class="content-pane">
+                <div class="events-header">
+                    <h2><i class="fas fa-calendar-star"></i> Активные мероприятия</h2>
+                    <button class="btn-create-event admin-only" id="createEventBtn" style="display:none;"><i class="fas fa-plus-circle"></i> Создать ивент</button>
+                </div>
+                <div class="events-grid" id="eventsContainer"></div>
+                <div class="my-requests">
+                    <h3><i class="fas fa-clock"></i> Мои заявки на участие</h3>
+                    <div id="pendingRegistrations" class="requests-list"></div>
+                </div>
+            </div>
+
+            <!-- Магазин -->
+            <div id="shopPane" class="content-pane">
+                <div class="shop-header">
+                    <h2><i class="fas fa-gem"></i> Магазин Активчиков</h2>
+                    <div class="user-coins-display" id="userCoinsDisplay">🪙 0 монет</div>
+                </div>
+                <div class="shop-categories">
+                    <button class="shop-cat active" data-cat="skins">🎨 Скины</button>
+                    <button class="shop-cat" data-cat="titles">🏷️ Титулы</button>
+                    <button class="shop-cat" data-cat="backgrounds">🖼️ Фоны</button>
+                    <button class="shop-cat" data-cat="frames">🖼️ Рамки</button>
+                    <button class="shop-cat" data-cat="achievements">🏅 Достижения</button>
+                </div>
+                <div class="shop-grid" id="shopContainer"></div>
+            </div>
+
+            <!-- Админ панель -->
+            <div id="adminPane" class="content-pane">
+                <div class="admin-header">
+                    <h2><i class="fas fa-shield-crown"></i> Панель администратора</h2>
+                </div>
+                <div class="admin-tabs">
+                    <button class="admin-tab-btn active" data-admin-tab="registrations">📝 Заявки</button>
+                    <button class="admin-tab-btn" data-admin-tab="users">👥 Пользователи</button>
+                    <button class="admin-tab-btn" data-admin-tab="events">📅 Управление ивентами</button>
+                    <button class="admin-tab-btn" data-admin-tab="rewards">🎁 Выдать награды</button>
+                </div>
+                <div id="adminRegistrationsTab" class="admin-tab-content active">
+                    <div id="adminRegistrationsList" class="admin-list"></div>
+                </div>
+                <div id="adminUsersTab" class="admin-tab-content">
+                    <div id="adminUsersList" class="admin-list"></div>
+                </div>
+                <div id="adminEventsTab" class="admin-tab-content">
+                    <div id="adminEventsList" class="admin-list"></div>
+                </div>
+                <div id="adminRewardsTab" class="admin-tab-content">
+                    <div class="admin-reward-form">
+                        <h3>Выдать награду пользователю</h3>
+                        <select id="rewardUserSelect"></select>
+                        <input type="number" id="rewardCoins" placeholder="Количество монет">
+                        <input type="number" id="rewardPoints" placeholder="Количество очков">
+                        <button class="btn-primary" onclick="giveReward()">Выдать</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Хранилище (только админ) -->
+            <div id="storagePane" class="content-pane">
+                <div class="storage-header">
+                    <h2><i class="fas fa-database"></i> Управление данными</h2>
+                </div>
+                <div class="storage-buttons">
+                    <button class="btn-primary" id="exportDataBtn"><i class="fas fa-download"></i> Сохранить данные в файл</button>
+                    <label class="btn-secondary" style="cursor:pointer;"><i class="fas fa-upload"></i> Загрузить из файла<input type="file" id="importFileInput" accept=".json" style="display:none;"></label>
+                    <button class="btn-danger" id="clearDataBtn"><i class="fas fa-trash-alt"></i> Очистить данные</button>
+                </div>
+                <div id="storageInfo"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Модалка авторизации -->
+    <div id="authModal" class="modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3><i class="fas fa-star"></i> Добро пожаловать в Активчики!</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="auth-switch">
+                    <button class="auth-switch-btn active" data-auth="login">Вход</button>
+                    <button class="auth-switch-btn" data-auth="register">Регистрация</button>
+                </div>
+                <form id="loginForm" class="auth-form active">
+                    <input type="text" id="loginUsername" placeholder="Твой никнейм" required>
+                    <input type="password" id="loginPassword" placeholder="Пароль" required>
+                    <button type="submit" class="btn-primary full">Войти</button>
+                </form>
+                <form id="registerForm" class="auth-form">
+                    <input type="text" id="regUsername" placeholder="Придумай никнейм" required>
+                    <input type="email" id="regEmail" placeholder="Email (необязательно)">
+                    <input type="password" id="regPassword" placeholder="Пароль (минимум 4 символа)" required>
+                    <input type="password" id="regConfirmPassword" placeholder="Повтори пароль" required>
+                    <button type="submit" class="btn-primary full">Зарегистрироваться</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модалка деталей ивента -->
+    <div id="eventModal" class="modal">
+        <div class="modal-card event-detail-modal">
+            <div class="modal-header">
+                <h3 id="eventModalTitle"></h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="eventModalBody"></div>
+        </div>
+    </div>
+
+    <!-- Модалка создания ивента -->
+    <div id="createEventModal" class="modal">
+        <div class="modal-card create-event-modal">
+            <div class="modal-header" style="background: linear-gradient(135deg, #FF6B6B, #A855F7);">
+                <h3><i class="fas fa-magic"></i> Создать новое мероприятие</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createEventForm">
+                    <div class="form-group">
+                        <label>🎯 Название мероприятия</label>
+                        <input type="text" id="eventName" required placeholder="Например: Турнир по настольным играм">
+                    </div>
+                    <div class="form-group">
+                        <label>📝 Описание</label>
+                        <textarea id="eventDesc" rows="3" required placeholder="Расскажи, что ждёт участников..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>⭐ Очки за участие</label>
+                            <input type="number" id="eventPoints" value="50" required>
+                        </div>
+                        <div class="form-group">
+                            <label>🪙 Монеты за участие</label>
+                            <input type="number" id="eventCoins" value="100" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>📅 Сезон</label>
+                            <select id="eventSeason">
+                                <option value="season_spring2026">Весна 2026</option>
+                                <option value="season_summer2026">Лето 2026</option>
+                                <option value="season_autumn2026">Осень 2026</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>🎨 Эмодзи</label>
+                            <input type="text" id="eventEmoji" value="🎯" maxlength="2">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary full">✨ Создать мероприятие</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/leaderboard.js"></script>
+    <script src="js/events.js"></script>
+    <script src="js/shop.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
