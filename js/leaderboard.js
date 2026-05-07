@@ -9,18 +9,30 @@ const seasons = {
 };
 
 // Стили рамок - уникальные для каждой
-const frameStylesMap = {
-    default: '',
-    bronze_frame: 'frame-bronze',
-    silver_frame: 'frame-silver',
-    gold_frame: 'frame-gold',
-    rainbow_frame: 'frame-rainbow',
-    legend_frame: 'frame-legend',
-    diamond_frame: 'frame-diamond',
-    emerald_frame: 'frame-emerald',
-    fire_frame: 'frame-fire',
-    ice_frame: 'frame-ice'
-};
+function getFrameStyle(frameId) {
+    switch(frameId) {
+        case 'bronze_frame':
+            return 'border: 3px solid #CD7F32; box-shadow: 0 0 10px rgba(205,127,50,0.5);';
+        case 'silver_frame':
+            return 'border: 3px solid #C0C0C0; box-shadow: 0 0 10px rgba(192,192,192,0.5);';
+        case 'gold_frame':
+            return 'border: 3px solid #FFD700; box-shadow: 0 0 15px rgba(255,215,0,0.5); animation: borderPulse 2s infinite;';
+        case 'rainbow_frame':
+            return 'border: 3px solid; animation: borderRainbow 3s linear infinite;';
+        case 'legend_frame':
+            return 'border: 3px solid #FF00FF; box-shadow: 0 0 15px #FF00FF; animation: borderGlow 1.5s infinite;';
+        case 'diamond_frame':
+            return 'border: 3px solid #00FFFF; box-shadow: 0 0 10px #00FFFF;';
+        case 'emerald_frame':
+            return 'border: 3px solid #00FF88; box-shadow: 0 0 10px #00FF88;';
+        case 'fire_frame':
+            return 'border: 3px solid #FF4500; box-shadow: 0 0 10px #FF4500; animation: borderPulse 1s infinite;';
+        case 'ice_frame':
+            return 'border: 3px solid #00BFFF; box-shadow: 0 0 10px #00BFFF; background: rgba(0,191,255,0.05);';
+        default:
+            return 'border: 2px solid rgba(255,255,255,0.2);';
+    }
+}
 
 // Цвета фонов
 const bgOptionsMap = {
@@ -53,46 +65,34 @@ function getSkinAnimation(avatar) {
     return animatedSkins[avatar] || '';
 }
 
-// Функция для получения стиля рамки с правильными цветами
-function getFrameStyle(frameId) {
-    switch(frameId) {
-        case 'bronze_frame':
-            return 'border: 3px solid #CD7F32; box-shadow: 0 0 10px rgba(205,127,50,0.5);';
-        case 'silver_frame':
-            return 'border: 3px solid #C0C0C0; box-shadow: 0 0 10px rgba(192,192,192,0.5);';
-        case 'gold_frame':
-            return 'border: 3px solid #FFD700; box-shadow: 0 0 15px rgba(255,215,0,0.5); animation: borderPulse 2s infinite;';
-        case 'rainbow_frame':
-            return 'border: 3px solid; animation: borderRainbow 3s linear infinite;';
-        case 'legend_frame':
-            return 'border: 3px solid #FF00FF; box-shadow: 0 0 15px #FF00FF; animation: borderGlow 1.5s infinite;';
-        case 'diamond_frame':
-            return 'border: 3px solid #00FFFF; box-shadow: 0 0 10px #00FFFF;';
-        case 'emerald_frame':
-            return 'border: 3px solid #00FF88; box-shadow: 0 0 10px #00FF88;';
-        case 'fire_frame':
-            return 'border: 3px solid #FF4500; box-shadow: 0 0 10px #FF4500; animation: borderPulse 1s infinite;';
-        case 'ice_frame':
-            return 'border: 3px solid #00BFFF; box-shadow: 0 0 10px #00BFFF; background: rgba(0,191,255,0.05);';
-        default:
-            return 'border: 2px solid rgba(255,255,255,0.2);';
-    }
-}
-
 function renderLeaderboard() {
     const tbody = document.getElementById('leaderboardBody');
     const topThreeContainer = document.getElementById('topThreeContainer');
     
     if (!tbody) return;
     
+    // Получаем пользователей из authManager
     const users = window.authManager?.users || [];
+    
+    // Фильтруем администраторов - они не должны отображаться в рейтинге
     const regularUsers = users.filter(u => !u.isAdmin);
     
+    console.log('Все пользователи:', users.length);
+    console.log('Обычные пользователи:', regularUsers.length);
+    
+    // Сортируем по очкам в текущем сезоне
     const sorted = [...regularUsers].sort((a, b) => {
         const pointsA = a.seasonPoints?.[currentSeason] || 0;
         const pointsB = b.seasonPoints?.[currentSeason] || 0;
         return pointsB - pointsA;
     });
+    
+    // Если нет пользователей, показываем сообщение
+    if (sorted.length === 0) {
+        if (topThreeContainer) topThreeContainer.innerHTML = '<div class="empty-leaderboard">✨ Пока нет участников. Зарегистрируйся первым!</div>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">✨ Нет участников в рейтинге</td></tr>';
+        return;
+    }
     
     // Топ 3 в правильном порядке: 2 место слева, 1 место в центре выше, 3 место справа
     const top3 = sorted.slice(0, 3);
@@ -100,7 +100,7 @@ function renderLeaderboard() {
     const second = top3[1];
     const third = top3[2];
     
-    if (topThreeContainer) {
+    if (topThreeContainer && top3.length > 0) {
         // Функция для получения стиля фона
         const getBgStyle = (user) => {
             if (!user) return bgOptionsMap.default;
@@ -109,46 +109,53 @@ function renderLeaderboard() {
         };
         
         topThreeContainer.innerHTML = `
-            <div class="top-card rank-2" style="background: ${getBgStyle(second)}; ${getFrameStyle(second?.frame)}">
+            <div class="top-card rank-2">
                 <div class="rank-medal">🥈</div>
-                <div class="top-avatar ${getSkinAnimation(second?.avatar)}">${second?.avatar || '🎮'}</div>
+                <div class="top-avatar ${getSkinAnimation(second?.avatar)}" style="background: ${getBgStyle(second)}; border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 50px; ${getFrameStyle(second?.frame)}">${second?.avatar || '🎮'}</div>
                 <div class="top-name">${second?.username || '-'}</div>
-                <div class="top-points">⭐ ${second?.seasonPoints?.[currentSeason] || 0} очков</div>
-                <div style="font-size: 12px;">🎯 ${second?.seasonEvents?.[currentSeason] || 0} ивентов</div>
-                <div class="top-title-badge" style="display: inline-block; background: rgba(0,0,0,0.5); padding: 2px 10px; border-radius: 20px; margin-top: 8px; font-size: 11px;">${second?.title || 'Новичок'}</div>
+                <div class="top-points">⭐ ${second?.seasonPoints?.[currentSeason] || 0}</div>
+                <div class="top-events">🎯 ${second?.seasonEvents?.[currentSeason] || 0}</div>
+                <div class="top-title">${second?.title || 'Новичок'}</div>
             </div>
-            <div class="top-card rank-1" style="background: ${getBgStyle(first)}; ${getFrameStyle(first?.frame)}">
+            <div class="top-card rank-1">
                 <div class="rank-medal">🥇</div>
-                <div class="top-avatar ${getSkinAnimation(first?.avatar)}">${first?.avatar || '🎮'}</div>
+                <div class="top-avatar ${getSkinAnimation(first?.avatar)}" style="background: ${getBgStyle(first)}; border-radius: 50%; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 55px; ${getFrameStyle(first?.frame)}">${first?.avatar || '🎮'}</div>
                 <div class="top-name">${first?.username || '-'}</div>
-                <div class="top-points">⭐ ${first?.seasonPoints?.[currentSeason] || 0} очков</div>
-                <div style="font-size: 12px;">🎯 ${first?.seasonEvents?.[currentSeason] || 0} ивентов</div>
-                <div class="top-title-badge" style="display: inline-block; background: rgba(0,0,0,0.5); padding: 2px 10px; border-radius: 20px; margin-top: 8px; font-size: 11px;">${first?.title || 'Новичок'}</div>
+                <div class="top-points">⭐ ${first?.seasonPoints?.[currentSeason] || 0}</div>
+                <div class="top-events">🎯 ${first?.seasonEvents?.[currentSeason] || 0}</div>
+                <div class="top-title">${first?.title || 'Новичок'}</div>
             </div>
-            <div class="top-card rank-3" style="background: ${getBgStyle(third)}; ${getFrameStyle(third?.frame)}">
+            <div class="top-card rank-3">
                 <div class="rank-medal">🥉</div>
-                <div class="top-avatar ${getSkinAnimation(third?.avatar)}">${third?.avatar || '🎮'}</div>
+                <div class="top-avatar ${getSkinAnimation(third?.avatar)}" style="background: ${getBgStyle(third)}; border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 50px; ${getFrameStyle(third?.frame)}">${third?.avatar || '🎮'}</div>
                 <div class="top-name">${third?.username || '-'}</div>
-                <div class="top-points">⭐ ${third?.seasonPoints?.[currentSeason] || 0} очков</div>
-                <div style="font-size: 12px;">🎯 ${third?.seasonEvents?.[currentSeason] || 0} ивентов</div>
-                <div class="top-title-badge" style="display: inline-block; background: rgba(0,0,0,0.5); padding: 2px 10px; border-radius: 20px; margin-top: 8px; font-size: 11px;">${third?.title || 'Новичок'}</div>
+                <div class="top-points">⭐ ${third?.seasonPoints?.[currentSeason] || 0}</div>
+                <div class="top-events">🎯 ${third?.seasonEvents?.[currentSeason] || 0}</div>
+                <div class="top-title">${third?.title || 'Новичок'}</div>
             </div>
         `;
+    } else if (topThreeContainer && top3.length === 0) {
+        topThreeContainer.innerHTML = '<div class="empty-leaderboard">🏆 Пока нет участников в топе</div>';
     }
     
+    // Все остальные пользователи в таблице
     const others = sorted.slice(3);
-    tbody.innerHTML = others.map((user, idx) => {
-        const rank = idx + 4;
-        return `
-            <tr>
-                <td>${rank}</td>
-                <td><span style="font-size:24px; margin-right:8px;">${user.avatar || '🎮'}</span> ${user.username}</td>
-                <td>${user.level}</td>
-                <td><strong style="color:var(--primary);">⭐ ${user.seasonPoints?.[currentSeason] || 0}</strong></td>
-                <td>🎯 ${user.seasonEvents?.[currentSeason] || 0}</td>
-            </tr>
-        `;
-    }).join('');
+    if (others.length === 0 && sorted.length <= 3) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">✨ Остальные участники появятся здесь</td></tr>';
+    } else {
+        tbody.innerHTML = others.map((user, idx) => {
+            const rank = idx + 4;
+            return `
+                <tr>
+                    <td class="rank-cell">${rank}</td>
+                    <td class="user-cell"><span class="user-avatar">${user.avatar || '🎮'}</span> <span class="user-name">${user.username}</span></td>
+                    <td class="level-cell">${user.level}</td>
+                    <td class="points-cell"><strong>⭐ ${user.seasonPoints?.[currentSeason] || 0}</strong></td>
+                    <td class="events-cell">🎯 ${user.seasonEvents?.[currentSeason] || 0}</td>
+                </tr>
+            `;
+        }).join('');
+    }
     
     updateSeasonTimer();
 }
@@ -186,5 +193,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
+    // Обновляем рейтинг при загрузке и при изменении данных
     renderLeaderboard();
+    
+    // Подписываемся на обновление пользователей
+    const originalUpdateUser = window.authManager?.updateUser;
+    if (window.authManager) {
+        window.authManager.updateUser = function(user) {
+            originalUpdateUser.call(window.authManager, user);
+            renderLeaderboard();
+        };
+        
+        window.authManager.saveUsers = function() {
+            window.authManager.saveUsersToFile(window.authManager.users);
+            window.authManager.updateStatsDisplay();
+            renderLeaderboard();
+        };
+    }
 });
