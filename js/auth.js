@@ -14,7 +14,7 @@ class AuthManager {
         // Начальные данные с расширенным ассортиментом
         const defaultUsers = [
             { 
-                id: 'admin1', username: 'Учитель', email: 'teacher@school.ru', password: 'admin123', 
+                id: 'admin1', username: 'Админ', email: 'teacher@school.ru', password: '23325', 
                 isAdmin: true, level: 20, points: 0, coins: 9999, avatar: '👩‍🏫', title: 'Главный организатор',
                 frame: 'gold_frame', bgColor: 'magic', participatedEvents: [],
                 seasonPoints: { season_winter2025: 0, season_spring2026: 0, season_summer2026: 0, season_autumn2026: 0 },
@@ -26,7 +26,7 @@ class AuthManager {
                 unlockedAchievements: []
             },
             { 
-                id: 'u1', username: 'СоняСолнышко', email: 'sonya@school.ru', password: '123456', 
+                id: 'u1', username: 'Дарья Викторовна', email: 'sonya@school.ru', password: '23325', 
                 isAdmin: false, level: 5, points: 350, coins: 520, avatar: '🌟', title: 'Новичок',
                 frame: 'default', bgColor: 'default', participatedEvents: [],
                 seasonPoints: { season_winter2025: 120, season_spring2026: 350, season_summer2026: 0, season_autumn2026: 0 },
@@ -36,30 +36,6 @@ class AuthManager {
                 unlockedBgs: ['default'], 
                 unlockedFrames: ['default'], 
                 unlockedAchievements: ['first_step']
-            },
-            { 
-                id: 'u2', username: 'АртёмЛидер', email: 'artem@school.ru', password: '123456', 
-                isAdmin: false, level: 12, points: 1250, coins: 2300, avatar: '⚡', title: 'Активист',
-                frame: 'silver_frame', bgColor: 'sunset', participatedEvents: [],
-                seasonPoints: { season_winter2025: 450, season_spring2026: 1250, season_summer2026: 0, season_autumn2026: 0 },
-                seasonEvents: { season_winter2025: 6, season_spring2026: 8, season_summer2026: 0, season_autumn2026: 0 },
-                unlockedSkins: ['🌟', '⚡', '🔥', '🐉'], 
-                unlockedTitles: ['Новичок', 'Активист', 'Мастер', 'Лидер'],
-                unlockedBgs: ['default', 'sunset', 'ocean'], 
-                unlockedFrames: ['default', 'silver_frame', 'gold_frame'], 
-                unlockedAchievements: ['first_step', 'activist', 'points_500', 'points_1000']
-            },
-            { 
-                id: 'u3', username: 'МашаТворческая', email: 'masha@school.ru', password: '123456', 
-                isAdmin: false, level: 8, points: 780, coins: 1450, avatar: '🎨', title: 'Творец',
-                frame: 'rainbow_frame', bgColor: 'cosmic', participatedEvents: [],
-                seasonPoints: { season_winter2025: 280, season_spring2026: 780, season_summer2026: 0, season_autumn2026: 0 },
-                seasonEvents: { season_winter2025: 4, season_spring2026: 6, season_summer2026: 0, season_autumn2026: 0 },
-                unlockedSkins: ['🌟', '🎨', '🌈', '🦄', '🤖'], 
-                unlockedTitles: ['Новичок', 'Творец', 'Волшебник', 'Чемпион'],
-                unlockedBgs: ['default', 'cosmic', 'magic', 'forest'], 
-                unlockedFrames: ['default', 'rainbow_frame', 'bronze_frame', 'silver_frame'], 
-                unlockedAchievements: ['first_step', 'creative']
             }
         ];
         this.saveUsersToFile(defaultUsers);
